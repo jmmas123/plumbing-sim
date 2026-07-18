@@ -5,9 +5,8 @@ _Updated 2026-07-17._
 ## Current position
 - Steady-state hydraulic sim of ONE aerial collector is built, fully measured, and
   test-backed. Files: `sim/index.html` (self-contained, opens via file://), `sim/verify.mjs`.
+- Relief tab (③) — momentum-aware Y-T split under surcharge — built and test-backed (21 checks green).
 - Published artifact: https://claude.ai/code/artifact/bffe0f46-2342-40d6-a44c-dfef82d8f9f9
-- Next task: analyze the Y-T emergency relief flow split — see
-  `docs/YT-OVERFLOW-ANALYSIS-BRIEF.md`. To be done in a fresh context.
 
 ## System, as measured on site
 - Roof 8,343 m² (123.6 × 67.5 m, 3 gables), plan area (pitch does NOT change Q).
@@ -30,8 +29,7 @@ _Updated 2026-07-17._
 ## Open leads (in priority order)
 1. INSPECT pipe interiors for silt/blockage — cheapest explanation for "worked for years,
    then failed"; 30 mm silt drops flood threshold to ~225 mm/h.
-2. Y-T relief flow-split analysis (fresh context — brief written).
-3. SWMM build for timing/storage (design storms per return period). Refs in `refs/`.
+2. SWMM build for timing/storage (design storms per return period). Refs in `refs/`.
 
 ## Conventions
 - `sim/index.html` is self-contained on purpose (ES modules don't load over file://).
