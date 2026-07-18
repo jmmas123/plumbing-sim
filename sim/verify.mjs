@@ -144,5 +144,14 @@ inv("zero opposing head gives the momentum asymptote, not zero",
   Math.abs(M.reliefSplit(0.070, { ...gj, h: 0 }).phi - (2 - Math.SQRT2)) < 0.02,
   "h->0 => N->inf => phi -> 2-sqrt2 for a 90 deg tee");
 
+console.log("\nINVARIANT — solveCollector surfaces the momentum relief");
+inv("a violent storm wakes the as-built relief",
+  M.solveCollector({ ...base, i: 600 }).reliefFrac > 0,
+  `frac ${(M.solveCollector({ ...base, i: 600 }).reliefFrac*100).toFixed(0)}%`);
+inv("a routine storm leaves the as-built relief dry",
+  M.solveCollector({ ...base, i: 120 }).reliefFrac === 0);
+inv("head-only ytActive is untouched (still the conservative reference)",
+  M.solveCollector({ ...base, i: 600 }).ytActive === false);
+
 console.log("\n" + (fails ? `${fails} FAILURE(S)` : "ALL CHECKS PASS"));
 process.exit(fails ? 1 : 0);

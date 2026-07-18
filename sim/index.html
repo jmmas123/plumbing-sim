@@ -580,6 +580,12 @@ function solveCollector(p){
   const fallCap = leader(p.d)/1000;
   const qDeliverMax = pipeCapacity(D, S + (p.hf + p.gdep + S*L)/L, p.n, hs);
 
+  const relief = reliefSplit(Math.min(Qtot, qDeliverMax), {
+    dPipe: p.d, dFall: p.ytFall || p.d,
+    angleDeg: (p.ytAngle != null ? p.ytAngle : 90),
+    h: (p.ytHead != null ? p.ytHead : 0.3),
+    blocked: !!p.ytBlocked, qFull: Qcap });
+
   /* Model-predicted clearance (pipe invert -> canaleta floor) at the OUTLET end.
    * We only fed it hf at the FAR end; this is derived from gradient x length, so
    * comparing it to the independently-measured 1.65 m validates the geometry. */
@@ -590,6 +596,8 @@ function solveCollector(p){
     gCap, gLoad, gUtil: gLoad/gCap,
     tuboLoad:qEach*1000, tuboRating:leader(p.db), tuboUtil:(qEach*1000)/leader(p.db),
     fallCap, qDeliverMax, ytActive: Math.min(Qtot, qDeliverMax) > fallCap,
+    reliefFrac: relief.reliefFrac, qStraight: relief.qStraight, qFall: relief.qFall,
+    reliefMech: relief.mechanism, reliefVin: relief.vIn,
     firstSpill: spilling.length ? Math.min(...spilling.map(t=>t.x)) : null};
 }
 function threshold(p, test){
