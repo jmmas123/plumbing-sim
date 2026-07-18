@@ -657,7 +657,7 @@ function solveCollector(p){
     tuboLoad:qEach*1000, tuboRating:leader(p.db), tuboUtil:(qEach*1000)/leader(p.db),
     fallCap, qDeliverMax, ytActive: Math.min(Qtot, qDeliverMax) > fallCap,
     reliefFrac: relief.reliefFrac, qStraight: relief.qStraight, qFall: relief.qFall,
-    reliefMech: relief.mechanism, reliefVin: relief.vIn,
+    reliefMech: relief.mechanism,
     firstSpill: spilling.length ? Math.min(...spilling.map(t=>t.x)) : null};
 }
 function threshold(p, test){

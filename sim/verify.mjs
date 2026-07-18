@@ -130,6 +130,10 @@ inv("a blocked outlet forces the WHOLE flow straight",
   Math.abs(M.reliefSplit(0.070, { ...gj, blocked: true }).reliefFrac - 1) < 1e-9);
 inv("below surcharge onset the relief is DRY (open-channel, gravity wins)",
   M.reliefSplit(0.030, gj).reliefFrac === 0 && M.reliefSplit(0.030, gj).mechanism === "dry");
+inv("blocked at low flow is a pure head-overflow relief",
+  M.reliefSplit(0.030, { ...gj, blocked: true }).mechanism === "head");
+inv("blocked at high flow engages both mechanisms",
+  M.reliefSplit(0.070, { ...gj, blocked: true }).mechanism === "both");
 inv("a deep branch head starves the momentum relief (N below threshold)",
   M.reliefSplit(0.070, { ...gj, h: 5.0 }).reliefFrac < 0.01,
   "raising h drops N below 1/(1+Kb) so phi -> 0");
