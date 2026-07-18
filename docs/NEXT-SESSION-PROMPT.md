@@ -1,23 +1,59 @@
 # Next-session init prompt — paste into the fresh window
 
-We're implementing the **OUTLET–RELIEF COUPLING** for the Bodega Triple stormwater sim.
+We're adding a **RELIEF-DIAMETER input** to the Bodega Triple stormwater sim (tab ②) — the top
+deferred follow-up (adversarial finding **M2**) from the just-shipped outlet–relief coupling.
 
 Read first, in order:
-1. `docs/STATE.md` — where the project stands.
-2. `docs/superpowers/plans/2026-07-18-outlet-relief-coupling.md` — **THE PLAN you execute** (4 TDD tasks).
-3. `docs/superpowers/specs/2026-07-18-outlet-relief-coupling-design.md` — the physics behind it (esp. §3 model, §6 the two corrections, §3.6 limitations).
+1. `docs/STATE.md` — where the project stands (Open leads #3 is this follow-up).
+2. `docs/superpowers/specs/2026-07-18-outlet-relief-coupling-design.md` — §3.2 (relief as a pipe),
+   §3.5 (the `dRelief = d` assumption row, tagged), §3.6 **M2**, and §5 (the invariant already
+   worded "larger `dRelief` … raises the flood threshold" — it currently exercises `Lrel`, not Ø).
+3. `.superpowers/sdd/progress.md` — the FINISHED ledger for the coupling, incl. the M2/M3 rationale.
 4. `CLAUDE.md` — project rules.
 
-**What just shipped:** the Y-T relief momentum-split tab ③ (merged to main `7822919`, pushed, republished). This feature couples that relief + the fall into the **Section tab ②** as a real outlet bottleneck: when arriving flow exceeds fall + relief capacity, the outlet backs up and lifts the whole HGL; toggle the relief to watch it hold the backup down.
+**What just shipped (do not redo):** the outlet–relief coupling on tab ② — the outlet is a real
+fall+relief bottleneck that backs up and lifts the HGL, with a relief on/off toggle and an `Lrel`
+slider (merged to `main` at `4bc93b8`, pushed; STATE at `7417b2b`; republished to the artifact URL
+below). The adversarial physics review returned SHIP.
 
-**Execute the plan subagent-driven** (`superpowers:subagent-driven-development`): fresh implementer per task, per-task spec+quality review gate, opus final whole-branch review. This is **physics-critical** — after Task 2 (the outlet head balance) re-run an **adversarial physics check on the IMPLEMENTED boundary** before merge. Do **NOT** weaken the C1 guard test (`"10\" re-pipe … relief HELPS under a clear outlet"`); a failure there means the coupling is wrong, not the test.
+**The problem to solve:** tab ②'s relief area is `Arel = π/4·(p.d·IN)²` — it ties the relief's
+diameter to the COLLECTOR. So a 10″ re-pipe silently models a 10″ relief run. If the real
+daylighting run stays 8″, the tool overstates the relief's help by ~(10/8)²≈1.56×. The C1
+DIRECTION (relief helps the 10″ case) is robust; only the MAGNITUDE is sensitive. Goal: let the
+relief diameter be set independently, so the user can run "10″ collector, 8″ relief."
+
+**START WITH BRAINSTORMING** (`superpowers:brainstorming` — it's a HARD GATE before any plan/code;
+this is a modeling decision, not a mechanical edit). Design questions to resolve with the user:
+- Default for `dRelief`: keep `= collector Ø` (backward-compatible, current behavior) or default to a
+  fixed 8″ (the as-built straight run)? Which is the honest default?
+- Provenance tag: the as-built relief IS the collector's measured 8″ straight run (`t-known`); but a
+  re-pipe hypothetical relief Ø is `t-assume`. How should the tag reflect the active case?
+- Does re-piping the collector physically re-pipe the straight-through relief run too, or not? (This
+  is the user's call about the remediation — ask them.)
+- Reconcile with tab ③: `reliefSplit(qIn, p)` already parameterizes a through-pipe diameter
+  (`p.dPipe`) and `p.dFall` separately from the collector. Reuse that `dPipe` concept for tab ②'s
+  relief Ø (one source of truth) or keep them separate? Check this before designing.
+- Bundle **M3** (add a bend loss to `Krel`, ~10–15% capacity) into the same slice, or keep separate?
+
+Then `superpowers:writing-plans` → `superpowers:subagent-driven-development` (fresh implementer per
+task, per-task spec+quality review, opus final whole-branch review). Physics-adjacent — re-run an
+adversarial physics check if the head-balance math changes.
 
 **Load-bearing conventions:**
-- **Branch before implementing** (e.g. `feat/outlet-relief-coupling`). After ANY edit to `sim/index.html` run `node sim/verify.mjs` and keep it green — it extracts the solver from the shipped HTML, so keep all `solveCollector` code before the `/* ---------------- svg helpers */` marker, and keep `<meta charset="utf-8">` the first line.
-- Vertical leaders = IPC orifice rating, **never Manning** — but the **relief is horizontal**, so pipe losses (entrance + friction + exit) DO apply to it.
-- Provenance tags are `class="tag t-known"` (measured/CAD) / `class="tag t-assume"` (assumed) — there is no `measured`/`assumed` modifier class.
-- **Honesty (must survive in the UI copy):** the relief cannot help far-end flooding caused **upstream** (the as-built observed flood), but **can** when the far-end flood is caused by **outlet backup** (blocked outlet, or the 10″ re-pipe). The 10″-re-pipe benefit must **not** be suppressed — it connects the user's two remediations.
-- **Task 1 bundles two pre-existing bug fixes** (fall cap by fall diameter; delivery-gradient de-double-count) that shift some published numbers — the user approved this. Watch that the tab-③ "violent storm wakes the relief" test doesn't flip on the lower `qDeliverMax`; raise its intensity if needed (noted in the plan).
+- **Branch before implementing** (e.g. `feat/relief-diameter-input`). After ANY edit to
+  `sim/index.html` run `node sim/verify.mjs` green — it extracts the solver from the shipped HTML, so
+  keep all `solveCollector`/`threshold`/`reliefSplit` code before the `/* ---------------- svg helpers */`
+  marker, and keep `<meta charset="utf-8">` the FIRST line. UI (`renderS`, fieldsets) lives AFTER it.
+- The relief is HORIZONTAL ⇒ pipe losses apply (`Krel = 1 + Ke + f·L/D`); the FALL is a vertical
+  leader ⇒ IPC `leader()` rating, never Manning. Don't blur the two.
+- Provenance tags are `class="tag t-known"` / `class="tag t-assume"` only (no `measured`/`assumed`
+  modifier class). Put the relief-Ø control in tab ②'s "Outlet — fall & relief" fieldset (next to `Lrel`).
+- Honesty: relief can't help an UPSTREAM-caused far-end flood; CAN help a BACKUP-caused one — this
+  must survive. Add/extend an invariant: SMALLER relief Ø ⇒ LESS relief help (lower flood threshold);
+  keep the C1 guard ("10″ re-pipe, relief HELPS under a clear outlet") green.
+- Extract, don't duplicate: if tab ② and tab ③ both need a relief-Ø-area, make it one shared helper.
 
-**Finish:** merge to main, push, and republish `sim/index.html` to the SAME artifact URL
-`https://claude.ai/code/artifact/bffe0f46-2342-40d6-a44c-dfef82d8f9f9` (favicon `🌧️`) via the Artifact tool's `url=` param — a fresh conversation otherwise mints a new URL. Repo: `git@github.com:jmmas123/plumbing-sim.git`, main at `1224d96`.
+**Finish:** merge to `main`, push, and republish `sim/index.html` to the SAME artifact URL
+`https://claude.ai/code/artifact/bffe0f46-2342-40d6-a44c-dfef82d8f9f9` (favicon `🌧️`) via the
+Artifact tool's `url=` param — a fresh conversation otherwise mints a new URL. Repo:
+`git@github.com:jmmas123/plumbing-sim.git`, main at `7417b2b`.
