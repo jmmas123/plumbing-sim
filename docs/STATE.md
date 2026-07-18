@@ -1,11 +1,11 @@
 # STATE — Bodega Triple stormwater sim
 
-_Updated 2026-07-17._
+_Updated 2026-07-18._
 
 ## Current position
 - Steady-state hydraulic sim of ONE aerial collector is built, fully measured, and
   test-backed. Files: `sim/index.html` (self-contained, opens via file://), `sim/verify.mjs`.
-- Relief tab (③) — momentum-aware Y-T split under surcharge — built and test-backed (21 checks green).
+- Relief tab (③) — momentum-aware Y-T split under surcharge — built and test-backed.
 - Published artifact: https://claude.ai/code/artifact/bffe0f46-2342-40d6-a44c-dfef82d8f9f9
 
 ## System, as measured on site
@@ -34,7 +34,7 @@ _Updated 2026-07-17._
 ## Conventions
 - `sim/index.html` is self-contained on purpose (ES modules don't load over file://).
   Has `<meta charset="utf-8">` at top — required for local file://; harmless when published.
-- `node sim/verify.mjs` extracts the solver from the shipped HTML and checks it (21 checks).
+- `node sim/verify.mjs` extracts the solver from the shipped HTML and checks it.
   Run it after ANY edit to the sim. Keep it green.
 - Downspouts/leaders are rated by IPC code (orifice), NEVER Manning (6–8× error).
 - Numbers tagged in-UI as `from CAD` / `measured` / `assumed` — preserve that honesty.
