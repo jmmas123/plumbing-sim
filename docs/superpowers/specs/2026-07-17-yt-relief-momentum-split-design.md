@@ -76,46 +76,56 @@ model's dry relief**, preserving continuity with the shipped tool. For a blocked
 
 ### Mechanism 2 — momentum pass-through (Scenario 2, the new physics)
 
-A steady **energy** split at this junction gives ≈ 0 straight flow (the fall, with metres of
-elevation drop, is head-favored and greedily fills to its leader cap). The straight overshoot is
-therefore a genuinely **inertial** effect that the steady energy balance omits. It is modeled with
-a **horizontal-momentum control volume** at the junction and a turning coefficient keyed to branch
-angle:
+Below surcharge onset the junction flows as an open channel and gravity sends everything down the
+branch (`phi = 0`, relief dry). Once the junction is **pressurised** (`q_in ≥ q_full`, the pipe's
+surcharge-onset flow), incoming horizontal momentum overshoots straight out the relief. A
+control-volume energy split with a momentum-derived turning loss (cross-checked by an independent
+ballistic-transit argument — both give the same law) yields the straight fraction in closed form:
 
 ```
-q_straight_mom = phi_mom(V_in, angle) · q_in
+V_in = q_in / A_pipe                       # full-bore combined velocity, A_pipe = π/4·d_pipe²
+N    = V_in² / (2·g·h)                      # velocity head ÷ branch effective gravity head
+phi  = max(0, ((1+K_b) − sqrt(1 + K_b + K_b/N)) / K_b)     # 0 for q_in < q_full
 ```
 
-with `phi_mom → 0` as `V_in → 0`, growing with `V_in²`, and `phi_mom(90°) > phi_mom(45°)`.
-`V_in = q_in / A_pipe` at full bore. This term matters most in a high-velocity surcharged burst.
+with `phi → 0` as `V_in → 0`, growing with `V_in²`, bounded by
+`phi_∞ = sqrt(1+K_b)/(1+sqrt(1+K_b))`, and `phi(90°) > phi(45°)`. It matters most in a
+high-velocity surcharged burst.
 
-### Combining (no double-counting)
+### Combining (no double-counting) — unified split
 
-The mechanisms compose in sequence, not by addition. Head-limited overflow spills first; momentum
-then skims a fraction of only the flow that head-logic still sends **down**:
+Momentum diverts `phi` of the inflow straight; the remainder heads for the fall, which can absorb
+at most its leader cap. Whatever the capped fall cannot take also spills straight:
 
 ```
-q_down_candidate = q_in − q_straight_head        # what head-logic routes to the fall
-q_straight       = q_straight_head + phi_mom · q_down_candidate
-q_fall           = q_in − q_straight
+q_fall_cap = blocked ? 0 : leader(d_fall)          # annular-film leader rating; 0 if outlet blocked
+q_fall     = min((1 − phi)·q_in, q_fall_cap)
+q_straight = q_in − q_fall
 ```
 
-This reduces correctly at both limits: unchoked fall (`q_straight_head = 0`) → `q_straight =
-phi_mom · q_in` (pure momentum); fully blocked (`q_straight_head = q_in`) → `q_straight = q_in`
-(pure overflow). `mechanism ∈ {dry, head, momentum, both}` is reported so the UI can show *why*
-the relief is (or isn't) engaged.
+Both mechanisms fall out of this one rule: unchoked fall (`(1−phi)·q_in < q_fall_cap`) →
+`q_straight = phi·q_in` (pure momentum); blocked (`q_fall_cap = 0`) → `q_straight = q_in` (pure
+overflow); surcharged past the cap → `q_fall = q_fall_cap`, `q_straight = q_in − cap` (head
+overflow). `mechanism ∈ {dry, head, momentum, both}` is reported so the UI shows *why* the relief
+is (or isn't) engaged.
 
-### Coefficient sourcing — Phase 0, DO NOT INVENT
+### Coefficients — sourced in Phase 0 (citations pinned)
 
-`K_branch`, `K_straight`, and the momentum turning coefficient are **not** to be guessed. They must
-be sourced in the implementation plan's Phase 0 from:
-- Idelchik, *Handbook of Hydraulic Resistance* — dividing tee/wye K as f(area ratio, branch angle,
-  `Q_branch/Q_main`).
-- Miller, *Internal Flow Systems* — tee/junction loss data.
-- A control-volume momentum derivation as an independent cross-check (methods must agree within
-  the K-factor uncertainty band).
-
-The spec commits to the **structure**; the plan pins the **numbers** with citations.
+- **Turning loss `K_b(θ) = 1 − cos θ`** — first-principles Borda/"destroyed streamwise component"
+  form: `1.0` at 90°, `0.29` at 45°. Lands inside the empirical bracket below; tag `from
+  literature`.
+- **Empirical bracket / sensitivity band for `K_b`**: Idelchik *Handbook of Hydraulic Resistance*
+  Ch. 7 dividing-tee `K_c,b = A′[1 + 0.3q²]` gives ≈ 0.73–0.94 at 90°; Crane TP-410 gives
+  ≈ 1.0–1.7. The two **agree** at 45° (≈ 0.3–0.8, falling with `q`) but **disagree ~2×** at 90° —
+  carry both bounds, never average. (Both reference combined velocity head; both are full-bore
+  pressurised correlations — valid here, invalid below surcharge.)
+- **Straight-run coefficient `K_s ≈ 0`** (slightly negative at low `q` — real momentum recovery,
+  Idelchik/Crane); kept at 0 in the primary split, a second-order effect.
+- **Branch effective gravity head `h`** — the dominant *quantitative* uncertainty (±0.1 on `phi`).
+  Default `0.3 m`, swept `0.1–1.0 m`; tag `assumed`.
+- **Cross-check**: the momentum control-volume derivation and the empirical Idelchik split agree on
+  the 90° > 45° ranking and the limits. Note Miller *Internal Flow Systems* dividing data is
+  **90°-only (angle-blind)** — not used for the angle sensitivity.
 
 ## 5. Sensitivity axes (the deliverable's spine)
 
