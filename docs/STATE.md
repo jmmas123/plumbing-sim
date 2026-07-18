@@ -7,9 +7,11 @@ _Updated 2026-07-18._
   `sim/index.html` (self-contained, file://) + `sim/verify.mjs`. Artifact:
   https://claude.ai/code/artifact/bffe0f46-2342-40d6-a44c-dfef82d8f9f9
 - SHIPPED: Y-T relief momentum-split tab ③ (merged to main `7822919`, pushed, republished).
-- READY TO EXECUTE (fresh session): outlet–relief coupling — makes the section outlet a real
-  bottleneck (fall + relief) so an overloaded outlet backs up and lifts the HGL. Spec `f59950f`,
-  plan `1224d96` (4 TDD tasks, subagent-driven). NOT yet implemented.
+- IMPLEMENTED (branch `feat/outlet-relief-coupling`, not yet merged/pushed/republished): tab ②
+  now couples the outlet (fall + relief) into the flood model — an overloaded outlet backs up
+  and lifts the HGL, toggled by a relief on/off control. Two pre-existing bugs fixed: `fallCap`
+  now uses the FALL diameter, not the collector's; `qDeliverMax` gradient no longer double-counts
+  slope. A 10″ re-pipe over the 8″ fall makes the relief effective under a clear outlet.
 
 ## System, as measured on site
 - Roof 8,343 m² (123.6 × 67.5 m, 3 gables), plan area (pitch does NOT change Q).
@@ -23,12 +25,6 @@ _Updated 2026-07-18._
 - Pipe cap ~38–40 L/s (8″@0.9%). Surcharges >~104 mm/h; FLOODS >~307 mm/h (as-measured) ≈ 2.6×
   the 2-yr storm ⇒ competently built. Observed far-end failure reproduced (level canaleta + friction).
 - Worst 24 h = 82.5 mm ≈ 2-yr day; no sub-daily gauge within 17 km.
-- Adversarial review (pending implementation): a 10″ re-pipe over the existing 8″ fall makes the
-  FALL the bottleneck ⇒ the relief helps under a clear outlet (connects the two remediations).
-
-## Pre-existing bugs — fixed in outlet-coupling plan Task 1 (user approved; moves published numbers)
-- `fallCap` (index.html ~L640) used collector Ø not FALL Ø → wrong for the 10″ re-pipe.
-- `qDeliverMax` gradient (~L641) double-counted slope (2S) → inflated delivery ~14%.
 
 ## Open leads
 1. INSPECT pipe interiors for silt/blockage — cheapest "worked for years then failed" explanation.

@@ -440,6 +440,18 @@
         seconds. No air binding. No momentum through the Y-T. It assumes every boca tubo keeps taking its
         full share right up until it spills. That is what the SWMM model is for — this is the instrument
         you can put your hands on, and the check SWMM has to agree with.</p>
+      <p><strong>The outlet is now a real bottleneck.</strong> The fall passes its leader rating
+        (<code>leader(dFall)</code>, 0 if blocked); the relief carries the overflow as a short pipe
+        <span class="tag t-assume">assumed L</span>. When the arriving flow exceeds both, the outlet
+        backs up and lifts this whole water line. For the as-built the fall out-capacities the
+        collector, so the relief is redundant — but a <strong>10″ re-pipe over the 8″ fall</strong>
+        makes the fall the limiter, and then the relief earns its keep with a clear outlet.</p>
+      <p><strong>What the relief can and cannot do.</strong> It cannot help far-end flooding caused
+        <em>upstream</em> (the flood you actually saw, outlet free — that water never reaches the Y-T).
+        It <em>can</em> lower the far end when the flood is caused by <em>outlet backup</em> (a blocked
+        outlet, or the 10″ re-pipe) — relieving the outlet drops the HGL everywhere, including the far
+        end. This tab ignores the small momentum bypass tab ③ shows, so its relief benefit is a
+        conservative lower bound.</p>
     </div>
   </div>
 
