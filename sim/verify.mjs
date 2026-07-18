@@ -171,7 +171,7 @@ const rep10 = { ...base, d: 10, ytFall: 8 };                // 10" re-pipe over 
 inv("as-built clear outlet: relief is redundant (thresholds match)",
   Math.abs(fld({ ...clr8, reliefOn: true }) - fld({ ...clr8, reliefOn: false })) < 3,
   `with ${fld({...clr8,reliefOn:true}).toFixed(0)} vs without ${fld({...clr8,reliefOn:false}).toFixed(0)} mm/h`);
-/* fld() returns null when spilling.length stays 0 across the ENTIRE 5-420 mm/h search
+/* fld() returns null when spilling.length stays 0 across the ENTIRE 5-600 mm/h search
  * bracket (M.threshold's fixed ceiling) — i.e. "does not flood even at the ceiling."
  * That is a TRUE upper case for a relief-helps comparison, not a missing value: raw
  * `>` would coerce null to 0 and silently read it as "worse," and `.toFixed` on null
@@ -181,7 +181,10 @@ const fldRep10On  = fld({ ...rep10, reliefOn: true });
 const fldRep10Off = fld({ ...rep10, reliefOn: false });
 inv("10\" re-pipe over an 8\" fall: relief HELPS under a CLEAR outlet",
   fldRep10On === null || fldRep10On > fldRep10Off + 3,
-  `with ${fldRep10On === null ? ">420 (never floods in range)" : fldRep10On.toFixed(0)} > without ${fldRep10Off.toFixed(0)} mm/h`);
+  `with ${fldRep10On === null ? ">600 (never floods in range)" : fldRep10On.toFixed(0)} > without ${fldRep10Off.toFixed(0)} mm/h`);
+inv("10\" re-pipe with relief: crossing is now observable within the ceiling and beats without-relief",
+  fldRep10On !== null && fldRep10On > fldRep10Off + 3,
+  `with ${fldRep10On === null ? "null(!)" : fldRep10On.toFixed(0)} > without ${fldRep10Off.toFixed(0)} mm/h`);
 inv("blocked outlet, no relief ⇒ floods far below the clear-outlet threshold",
   fld({ ...clr8, ytBlocked: true, reliefOn: false }) < fld({ ...clr8, reliefOn: false }) - 20);
 inv("blocked ordering: no-relief < relief < clear",

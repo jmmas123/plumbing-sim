@@ -714,7 +714,7 @@ function solveCollector(p){
     firstSpill: spilling.length ? Math.min(...spilling.map(t=>t.x)) : null};
 }
 function threshold(p, test){
-  let lo = 5, hi = 420;
+  let lo = 5, hi = 600;
   if (!test(solveCollector(Object.assign({}, p, {i:hi})))) return null;
   for (let k=0;k<42;k++){ const m=(lo+hi)/2;
     if (test(solveCollector(Object.assign({}, p, {i:m})))) hi=m; else lo=m; }
@@ -1073,7 +1073,7 @@ function renderS(tcNow){
   const fldOther = threshold({ ...p, reliefOn: !p.reliefOn }, x => x.spilling.length > 0);
   const fldWith = p.reliefOn ? tFld : fldOther;
   const fldWithout = p.reliefOn ? fldOther : tFld;
-  const reliefHelps = fldWith !== null && fldWithout !== null && fldWith - fldWithout > 2;
+  const reliefHelps = fldWithout !== null && (fldWith === null || fldWith - fldWithout > 2);
   const fmt = v => v === null ? "—" : v.toFixed(0);
   const lost = (1 - r.Qcap/r.QcapIdeal)*100;
   setStrip($("strip"), [
