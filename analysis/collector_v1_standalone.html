@@ -1,0 +1,621 @@
+<title>Bodega Triple — Collector Hydraulics</title>
+<style>
+  :root {
+    --ground:#EAECE7; --surface:#F7F8F4; --sunk:#DFE2DC;
+    --ink:#191F1D; --ink-2:#4A544F; --muted:#77827C;
+    --rule:#C9CFC7; --rule-2:#DDE1DA;
+    --water:#0E7C7B; --water-2:#3FA3A2; --water-fill:rgba(14,124,123,.16);
+    --bad:#B33F35; --bad-fill:rgba(179,63,53,.12);
+    --warn:#B57C1E; --ok:#3F7350;
+    --pipe:#2B3330; --known:#3F7350; --assume:#B57C1E;
+    --shadow:0 1px 2px rgba(25,31,29,.06), 0 8px 24px -12px rgba(25,31,29,.18);
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#121615; --surface:#1A201E; --sunk:#0D1110;
+      --ink:#E6EBE8; --ink-2:#A9B4AE; --muted:#7E8A84;
+      --rule:#2C3532; --rule-2:#222A27;
+      --water:#3FC7C4; --water-2:#2A8F8D; --water-fill:rgba(63,199,196,.18);
+      --bad:#E6685B; --bad-fill:rgba(230,104,91,.14);
+      --warn:#DDA340; --ok:#5FA274;
+      --pipe:#C3CCC7; --known:#5FA274; --assume:#DDA340;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#EAECE7; --surface:#F7F8F4; --sunk:#DFE2DC;
+    --ink:#191F1D; --ink-2:#4A544F; --muted:#77827C;
+    --rule:#C9CFC7; --rule-2:#DDE1DA;
+    --water:#0E7C7B; --water-2:#3FA3A2; --water-fill:rgba(14,124,123,.16);
+    --bad:#B33F35; --bad-fill:rgba(179,63,53,.12);
+    --warn:#B57C1E; --ok:#3F7350;
+    --pipe:#2B3330; --known:#3F7350; --assume:#B57C1E;
+    --shadow:0 1px 2px rgba(25,31,29,.06), 0 8px 24px -12px rgba(25,31,29,.18);
+  }
+  :root[data-theme="dark"]{
+    --ground:#121615; --surface:#1A201E; --sunk:#0D1110;
+    --ink:#E6EBE8; --ink-2:#A9B4AE; --muted:#7E8A84;
+    --rule:#2C3532; --rule-2:#222A27;
+    --water:#3FC7C4; --water-2:#2A8F8D; --water-fill:rgba(63,199,196,.18);
+    --bad:#E6685B; --bad-fill:rgba(230,104,91,.14);
+    --warn:#DDA340; --ok:#5FA274;
+    --pipe:#C3CCC7; --known:#5FA274; --assume:#DDA340;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:15px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1240px; margin:0 auto; padding:28px 20px 64px}
+
+  /* ---- masthead ---- */
+  header{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end;
+    justify-content:space-between; padding-bottom:16px; border-bottom:1px solid var(--rule)}
+  .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.13em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 4px}
+  h1{margin:0; font-size:clamp(22px,3vw,30px); line-height:1.15; letter-spacing:-.02em;
+    font-weight:640; text-wrap:balance}
+  .sub{margin:6px 0 0; color:var(--ink-2); max-width:62ch; font-size:14px}
+
+  /* ---- verdict ---- */
+  .verdict{display:flex; align-items:center; gap:10px; padding:9px 15px; border-radius:2px;
+    font-family:var(--mono); font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+    font-weight:600; border:1px solid currentColor; white-space:nowrap}
+  .verdict .dot{width:8px; height:8px; border-radius:50%; background:currentColor; flex:none}
+  .v-ok{color:var(--ok)} .v-warn{color:var(--warn)} .v-bad{color:var(--bad)}
+
+  /* ---- readout strip ---- */
+  .strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+    gap:1px; background:var(--rule-2); border:1px solid var(--rule-2);
+    margin:20px 0 24px; border-radius:3px; overflow:hidden}
+  .stat{background:var(--surface); padding:12px 14px}
+  .stat .k{font-family:var(--mono); font-size:10px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); display:block; margin-bottom:5px}
+  .stat .v{font-family:var(--mono); font-size:21px; font-weight:600;
+    font-variant-numeric:tabular-nums; letter-spacing:-.02em; display:block; line-height:1.1}
+  .stat .n{font-size:11px; color:var(--muted); margin-top:3px; display:block}
+  .stat .v.bad{color:var(--bad)} .stat .v.warn{color:var(--warn)} .stat .v.ok{color:var(--ok)}
+
+  /* ---- drawing ---- */
+  .sheet{background:var(--surface); border:1px solid var(--rule);
+    border-radius:3px; box-shadow:var(--shadow); padding:8px 8px 4px; margin-bottom:8px}
+  svg.section{display:block; width:100%; height:auto}
+  .cap{display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    font-family:var(--mono); font-size:10.5px; color:var(--muted);
+    letter-spacing:.06em; padding:0 6px 6px}
+
+  /* ---- legend ---- */
+  .legend{display:flex; flex-wrap:wrap; gap:16px; margin:0 0 26px; padding:10px 12px;
+    font-size:12px; color:var(--ink-2); background:var(--sunk);
+    border-radius:3px; border:1px solid var(--rule-2)}
+  .legend span{display:inline-flex; align-items:center; gap:7px; white-space:nowrap}
+  .swatch{width:16px; height:0; border-top-width:2.5px; border-top-style:solid; flex:none}
+
+  /* ---- controls ---- */
+  .panels{display:grid; grid-template-columns:repeat(auto-fit,minmax(268px,1fr)); gap:14px}
+  fieldset{border:1px solid var(--rule); border-radius:3px; background:var(--surface);
+    padding:14px 16px 16px; margin:0; min-width:0}
+  legend{font-family:var(--mono); font-size:10px; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--ink); font-weight:600; padding:0 7px; background:var(--surface)}
+  .ctl{margin-top:13px}
+  .ctl:first-of-type{margin-top:2px}
+  .ctl label{display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+    font-size:12.5px; color:var(--ink-2); margin-bottom:5px}
+  .ctl .val{font-family:var(--mono); font-size:12.5px; font-weight:600; color:var(--ink);
+    font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%; accent-color:var(--water); height:20px; margin:0; cursor:grab}
+  input[type=range]:active{cursor:grabbing}
+  input[type=range]:focus-visible{outline:2px solid var(--water); outline-offset:3px}
+  select{width:100%; font-family:var(--mono); font-size:12.5px; padding:5px 7px;
+    background:var(--ground); color:var(--ink); border:1px solid var(--rule); border-radius:2px}
+  select:focus-visible{outline:2px solid var(--water); outline-offset:1px}
+  .tag{font-family:var(--mono); font-size:8.5px; letter-spacing:.09em; text-transform:uppercase;
+    padding:1.5px 5px; border-radius:2px; border:1px solid currentColor; font-weight:600; flex:none}
+  .t-known{color:var(--known)} .t-assume{color:var(--assume)}
+  .hint{font-size:11.5px; color:var(--muted); margin:7px 0 0; line-height:1.45}
+
+  /* ---- presets ---- */
+  .presets{display:flex; gap:8px; flex-wrap:wrap; margin:26px 0 8px}
+  button.preset{font-family:var(--mono); font-size:11px; letter-spacing:.06em;
+    padding:8px 13px; border:1px solid var(--rule); background:var(--surface);
+    color:var(--ink); border-radius:2px; cursor:pointer; transition:border-color .12s, color .12s}
+  button.preset:hover{border-color:var(--water); color:var(--water)}
+  button.preset:focus-visible{outline:2px solid var(--water); outline-offset:2px}
+
+  .note{margin-top:26px; padding:14px 16px; background:var(--sunk);
+    border:1px solid var(--rule-2); border-left:2px solid var(--water); border-radius:3px;
+    font-size:13px; color:var(--ink-2)}
+  .note strong{color:var(--ink)}
+  .note p{margin:0 0 8px} .note p:last-child{margin:0}
+  code{font-family:var(--mono); font-size:.9em; background:var(--ground);
+    padding:1px 5px; border-radius:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">San Andrés Ofibodegas · Bodega Triple · Ciudad Arce</p>
+      <h1>Why the far boca tubos flood</h1>
+      <p class="sub">One aerial collector, in section. Drag anything and watch the water level move.
+        The outlet is on the left; the far end — where you saw water — is on the right.</p>
+    </div>
+    <div class="verdict v-ok" id="verdict"><span class="dot"></span><span id="verdictText">—</span></div>
+  </header>
+
+  <div class="strip" id="strip"></div>
+
+  <div class="sheet">
+    <svg class="section" id="svg" viewBox="0 0 1060 430" role="img"
+         aria-label="Longitudinal section of the aerial collector showing the hydraulic grade line"></svg>
+    <div class="cap">
+      <span id="veLabel">—</span>
+      <span>Longitudinal section · looking east</span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch" style="border-color:var(--pipe)"></i>Pipe wall</span>
+    <span><i class="swatch" style="border-color:var(--water); border-top-width:3px"></i>HGL — the level water wants to sit at</span>
+    <span><i class="swatch" style="border-color:var(--bad); border-top-style:dashed"></i>Gutter lip — cross this and it spills</span>
+    <span><i class="swatch" style="border-color:var(--muted); border-top-style:dotted"></i>Pipe crown</span>
+  </div>
+
+  <div class="presets">
+    <button class="preset" data-p="asbuilt">As built</button>
+    <button class="preset" data-p="steeper">Re-hang at 2%</button>
+    <button class="preset" data-p="tenin">Re-pipe to 10"</button>
+    <button class="preset" data-p="both">10" at 2%</button>
+    <button class="preset" data-p="parallel">If the gutter followed the pipe</button>
+  </div>
+
+  <div class="panels">
+    <fieldset>
+      <legend>Rain</legend>
+      <div class="ctl">
+        <label for="i"><span>Intensity <span class="tag t-assume">no local IDF</span></span>
+          <span class="val" id="i_v">120 mm/h</span></label>
+        <input type="range" id="i" min="20" max="260" step="5" value="120">
+        <p class="hint">≈120 mm/h is the 2-year, 10-minute intensity measured at Ilopango. Your roof
+          reacts in 3–5 minutes, so this is the number that matters — not the daily total.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Roof</legend>
+      <div class="ctl">
+        <label for="area"><span>Area per collector <span class="tag t-known">from CAD</span></span>
+          <span class="val" id="area_v">1390 m²</span></label>
+        <input type="range" id="area" min="400" max="2400" step="10" value="1390">
+        <p class="hint">8,343 m² of roof ÷ 6 collectors. Measured off the dimensioned column grid, ±1%.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Collector — the pipe that fails</legend>
+      <div class="ctl">
+        <label for="d"><span>Diameter <span class="tag t-assume">verify</span></span>
+          <span class="val" id="d_v">8 in</span></label>
+        <input type="range" id="d" min="4" max="14" step="1" value="8">
+      </div>
+      <div class="ctl">
+        <label for="s"><span>Gradient <span class="tag t-assume">measure this</span></span>
+          <span class="val" id="s_v">1.00 %</span></label>
+        <input type="range" id="s" min="0.2" max="3" step="0.05" value="1">
+        <p class="hint">The drawing says 1%. Hangers sag. This is the single most valuable thing
+          you can go and measure.</p>
+      </div>
+      <div class="ctl">
+        <label for="L"><span>Run length <span class="tag t-known">from CAD</span></span>
+          <span class="val" id="L_v">70 m</span></label>
+        <input type="range" id="L" min="20" max="100" step="1" value="70">
+      </div>
+      <div class="ctl">
+        <label for="n"><span>Wall roughness n <span class="tag t-assume">assumed</span></span>
+          <span class="val" id="n_v">0.011</span></label>
+        <input type="range" id="n" min="0.009" max="0.014" step="0.0005" value="0.011">
+        <p class="hint">0.009 is factory-smooth PVC. 0.011–0.013 is realistic once it has silt,
+          burrs and glue runs in it.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Gutter &amp; boca tubos</legend>
+      <div class="ctl">
+        <label for="gs"><span>Gutter gradient <span class="tag t-assume">inferred</span></span>
+          <span class="val" id="gs_v">0.00 % (level)</span></label>
+        <input type="range" id="gs" min="0" max="3" step="0.05" value="0">
+        <p class="hint">The crux. Set it equal to the pipe's gradient and the flooding moves to the
+          outlet end — which is <em>not</em> what you saw. Your observation is what tells us it's level.</p>
+      </div>
+      <div class="ctl">
+        <label for="hf"><span>Clearance at far end <span class="tag t-assume">measure this</span></span>
+          <span class="val" id="hf_v">0.50 m</span></label>
+        <input type="range" id="hf" min="0.05" max="2.5" step="0.05" value="0.5">
+        <p class="hint">Gutter lip to pipe crown at the far end — your tightest point, and the height
+          the water has to climb before it comes back out at you.</p>
+      </div>
+      <div class="ctl">
+        <label for="nb"><span>Boca tubos on this run</span><span class="val" id="nb_v">7</span></label>
+        <input type="range" id="nb" min="2" max="14" step="1" value="7">
+      </div>
+      <div class="ctl">
+        <label for="db"><span>Boca tubo diameter <span class="tag t-assume">verify</span></span></label>
+        <select id="db">
+          <option value="3">3 in</option>
+          <option value="4" selected>4 in</option>
+          <option value="6">6 in</option>
+          <option value="8">8 in</option>
+        </select>
+        <p class="hint">Checked against plumbing-code leader ratings, not Manning — a vertical pipe
+          runs as a film with an air core, so Manning would flatter it by 6–8×.</p>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="note">
+    <p><strong>Full is not the same as flooding — and that gap is the whole story.</strong> Watch the
+      two thresholds. Past <em>Surcharges above</em>, the pipe is running full and pressurised: it is
+      over capacity, but nothing is on your roof yet. Water instead climbs up inside the boca tubos.
+      Only past <em>Floods above</em> has it climbed the whole drop and come back out at the gutter.
+      The distance between those two numbers is your boca tubo drop height — a buffer you own and
+      have never measured.</p>
+    <p><strong>What this model does.</strong> Steady flow, one collector. Rain becomes flow by
+      <code>Q = C·i·A</code> (C = 0.95). Each boca tubo hands in an equal share. The water surface is
+      marched upstream from the free outlet using Manning's friction slope; where the pipe runs full it
+      pressurises and the HGL climbs above the crown. Wherever that line crosses a gutter lip, water
+      comes back out at you. The fall and the boca tubos are rated as vertical leaders from the
+      plumbing code, not by Manning — a vertical pipe runs as a film around an air core, and Manning
+      would flatter it by 6–8×.</p>
+    <p><strong>What it doesn't do.</strong> No time — a real storm rises and falls, and the pipe has
+      storage that buys you seconds. No air binding. No momentum through the Y-T. It also assumes every
+      boca tubo keeps accepting its full share right up until it spills. That's what the SWMM model is
+      for; this is the instrument you can put your hands on, and the sanity check the big model has to
+      agree with.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const IN = 0.0254, G = 9.81, C = 0.95;
+
+  // Plumbing-code vertical leader ratings (IPC Table 1106.3), gpm -> L/s.
+  // A vertical leader flows as an annular film around an air core, NOT full bore:
+  // Manning does not apply and overstates it ~6-8x.
+  // The published table stops at 8"; it tracks D^(8/3) to within 1% across 4-8",
+  // so 10-14" are extrapolated on that exponent and flagged as such.
+  const LEADER_LPS = {
+    2:1.89, 3:5.80, 4:12.11, 5:22.71, 6:35.51, 8:76.18,   // IPC Table 1106.3
+    9:101.9, 10:141.4, 11:178.4, 12:223.3, 13:271.6, 14:328.4, 7:52.6  // extrapolated
+  };
+  const leader = d => LEADER_LPS[d] !== undefined ? LEADER_LPS[d]
+    : 76.18*Math.pow(d/8, 8/3);
+
+  const $ = id => document.getElementById(id);
+  const el = (tag, attrs) => {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  };
+  const txt = (x, y, s, attrs) => {
+    const t = el("text", Object.assign({x, y}, attrs || {}));
+    t.textContent = s;
+    return t;
+  };
+
+  // ---- circular pipe geometry at depth y ----
+  function geom(y, D){
+    if (y <= 0) return {a:1e-9, r:1e-9};
+    if (y >= D) { const a = Math.PI*D*D/4; return {a, r:D/4}; }
+    const th = 2*Math.acos(1 - 2*y/D);          // wetted angle, radians
+    const a  = D*D/8*(th - Math.sin(th));
+    const p  = D*th/2;
+    return {a, r:a/p};
+  }
+  const Sf = (Q, y, D, n) => {                   // friction slope, Manning
+    const g = geom(y, D);
+    return (n*n*Q*Q)/(g.a*g.a*Math.pow(g.r, 4/3));
+  };
+  function normalDepth(Q, D, S, n){              // bisect for y where Manning passes Q
+    if (Q <= 0) return 0;
+    let lo = 1e-6, hi = D;
+    const q = y => { const g = geom(y, D); return (1/n)*g.a*Math.pow(g.r, 2/3)*Math.sqrt(S); };
+    if (q(D) < Q) return D;                      // needs to pressurise
+    for (let k = 0; k < 60; k++){
+      const m = (lo+hi)/2;
+      if (q(m) < Q) lo = m; else hi = m;
+    }
+    return (lo+hi)/2;
+  }
+
+  function solve(p){
+    const D = p.d*IN, S = p.s/100, gs = p.gs/100, L = p.L;
+    const Qtot = C*(p.i/1000/3600)*p.area;                 // m3/s at the outlet
+    const Aful = Math.PI*D*D/4;
+    const Qcap = (1/p.n)*Aful*Math.pow(D/4, 2/3)*Math.sqrt(S);
+
+    // boca tubos evenly spaced; x measured from the outlet (x=0) to the far end (x=L)
+    const xs = [];
+    for (let k = 0; k < p.nb; k++) xs.push(L*(k+0.5)/p.nb);
+    const qEach = Qtot/p.nb;
+
+    const zInv = x => S*x;                                  // invert rises toward the far end
+    // Gutter lip: fixed clearance hf above the crown at the FAR end, then its own gradient.
+    const G0 = p.hf + S*L + D - gs*L;
+    const gut = x => G0 + gs*x;
+
+    const Qat = x => qEach*xs.filter(v => v > x).length;    // flow only from tubos upstream
+
+    // march the water surface upstream from the free outlet
+    const dx = 0.05, prof = [];
+    let hgl = zInv(0) + Math.min(normalDepth(Qat(0), D, S, p.n), D);
+    for (let x = 0; x <= L + 1e-9; x += dx){
+      const Q = Qat(x), z = zInv(x);
+      hgl = Math.max(hgl, z + Math.min(normalDepth(Q, D, S, p.n), D));
+      prof.push({x, hgl, z, crown:z+D, g:gut(x), Q});
+      const y = Math.min(Math.max(hgl - z, 1e-6), D);
+      hgl += Sf(Q, y, D, p.n)*dx;
+    }
+    const at = x => prof.reduce((b,r) => Math.abs(r.x-x) < Math.abs(b.x-x) ? r : b, prof[0]);
+
+    const tubos = xs.map(x => {
+      const r = at(x);
+      return {x, spill: r.hgl >= r.g - 1e-6, free: r.g - r.hgl, hgl:r.hgl, g:r.g};
+    });
+    const spilling = tubos.filter(t => t.spill);
+    const rating = leader(p.db);
+
+    // The fall is the same diameter as the collector and runs as a vertical leader,
+    // so its capacity is the code rating -- NOT Manning at 100% slope.
+    const fallCap = leader(p.d)/1000;                       // m3/s
+
+    // The Y-T can only wet if the fall backs up, and the fall can only back up if the
+    // collector can PUSH more at the outlet than the fall swallows. The collector's
+    // ceiling is itself bounded: once it surcharges to the gutter lip, water spills out
+    // of the boca tubos instead of piling higher, so the driving gradient stops rising.
+    const headMax  = p.hf + S*L;                            // lip above outlet crown
+    const effSlope = S + headMax/L;                         // steepest HGL it can ever hold
+    const qDeliverMax = (1/p.n)*Aful*Math.pow(D/4, 2/3)*Math.sqrt(effSlope);
+    const qToFall  = Math.min(Qtot, qDeliverMax);
+
+    return {
+      prof, tubos, spilling, D, S, gs, L, G0, gut, zInv,
+      Qtot, Qcap, Qpeak:Qtot,
+      util: Qtot/Qcap,
+      tuboLoad: qEach*1000, tuboRating: rating, tuboUtil: (qEach*1000)/rating,
+      fallCap, qDeliverMax, ytActive: qToFall > fallCap,
+      firstSpill: spilling.length ? Math.min(...spilling.map(t=>t.x)) : null,
+      minFree: Math.min(...tubos.map(t=>t.free))
+    };
+  }
+
+  // Threshold finders: the two are NOT the same number, and the gap between them
+  // is the whole point -- a surcharged pipe is not yet a flooded roof.
+  function threshold(p, test){
+    let lo = 5, hi = 420;
+    if (!test(solve(Object.assign({}, p, {i:hi})))) return null;
+    for (let k = 0; k < 42; k++){
+      const m = (lo+hi)/2;
+      if (test(solve(Object.assign({}, p, {i:m})))) hi = m; else lo = m;
+    }
+    return hi;
+  }
+
+  // ------------- drawing -------------
+  const svg = $("svg");
+  const M = {l:52, r:26, t:26, b:44}, W = 1060, H = 430;
+  const PW = W-M.l-M.r, PH = H-M.t-M.b;
+
+  function draw(r, p){
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    const yTop = Math.max(r.gut(0), r.gut(r.L)) + 0.22;
+    const yBot = -0.75;
+    const sx = x => M.l + (x/r.L)*PW;
+    const sy = z => M.t + (yTop - z)/(yTop - yBot)*PH;
+    const ve = ((PW/r.L)/(PH/(yTop-yBot)));
+    $("veLabel").textContent =
+      `Vertical exaggeration ×${ve.toFixed(0)} · horizontal ${r.L.toFixed(0)} m · vertical ${(yTop-yBot).toFixed(2)} m`;
+
+    const g = el("g", {"font-family":"ui-monospace,SFMono-Regular,Menlo,monospace"});
+    svg.appendChild(g);
+
+    // ---- datum grid ----
+    for (let z = Math.ceil(yBot*2)/2; z <= yTop; z += 0.5){
+      g.appendChild(el("line", {x1:M.l, y1:sy(z), x2:W-M.r, y2:sy(z),
+        stroke:"var(--rule-2)", "stroke-width":1}));
+      g.appendChild(txt(M.l-8, sy(z)+3.5, z.toFixed(1),
+        {"text-anchor":"end", "font-size":9, fill:"var(--muted)"}));
+    }
+    g.appendChild(txt(M.l-8, M.t-10, "m", {"text-anchor":"end","font-size":9, fill:"var(--muted)"}));
+
+    // ---- roof + gutter (level line with a lip) ----
+    const gp = `M ${sx(0)} ${sy(r.gut(0))} L ${sx(r.L)} ${sy(r.gut(r.L))}`;
+    g.appendChild(el("path", {d:gp, stroke:"var(--pipe)", "stroke-width":2.5, fill:"none"}));
+    // gutter lip = the spill threshold
+    g.appendChild(el("path", {d:gp, stroke:"var(--bad)", "stroke-width":1.2,
+      "stroke-dasharray":"5 4", fill:"none", opacity:.75}));
+    for (let k = 0; k <= 24; k++){                      // roof hatching above the gutter
+      const x = sx(r.L*k/24);
+      g.appendChild(el("line", {x1:x, y1:sy(r.gut(r.L*k/24)), x2:x-7, y2:sy(r.gut(r.L*k/24))-9,
+        stroke:"var(--rule)", "stroke-width":1}));
+    }
+    g.appendChild(txt(sx(r.L*0.5), sy(Math.max(r.gut(0),r.gut(r.L)))-13,
+      p.gs === 0 ? "CANALETA — level" : `CANALETA — ${p.gs.toFixed(2)}%`,
+      {"text-anchor":"middle","font-size":9.5, fill:"var(--muted)", "letter-spacing":".08em"}));
+
+    // ---- water inside the pipe ----
+    let fill = `M ${sx(0)} ${sy(r.prof[0].z)}`;
+    r.prof.forEach(q => { fill += ` L ${sx(q.x)} ${sy(Math.min(q.hgl, q.crown))}`; });
+    for (let k = r.prof.length-1; k >= 0; k--) fill += ` L ${sx(r.prof[k].x)} ${sy(r.prof[k].z)}`;
+    g.appendChild(el("path", {d:fill+" Z", fill:"var(--water-fill)", stroke:"none"}));
+
+    // ---- pipe walls ----
+    const line = (key, attrs) => {
+      let d = "";
+      r.prof.forEach((q,k) => { d += (k?" L ":"M ")+sx(q.x)+" "+sy(q[key]); });
+      g.appendChild(el("path", Object.assign({d, fill:"none"}, attrs)));
+    };
+    line("crown", {stroke:"var(--muted)", "stroke-width":1.2, "stroke-dasharray":"3 3"});
+    line("z",     {stroke:"var(--pipe)",  "stroke-width":2.2});
+
+    // ---- HGL ----
+    line("hgl", {stroke:"var(--water)", "stroke-width":3, "stroke-linejoin":"round"});
+
+    // ---- boca tubos ----
+    r.tubos.forEach((t, idx) => {
+      const x = sx(t.x), yTopP = sy(t.g), yBotP = sy(r.zInv(t.x)+r.D);
+      const w = 3.2;
+      g.appendChild(el("line", {x1:x-w, y1:yTopP, x2:x-w, y2:yBotP,
+        stroke:"var(--pipe)", "stroke-width":1.6}));
+      g.appendChild(el("line", {x1:x+w, y1:yTopP, x2:x+w, y2:yBotP,
+        stroke:"var(--pipe)", "stroke-width":1.6}));
+      // water standing up the tubo
+      const wl = Math.min(t.hgl, t.g);
+      if (wl > r.zInv(t.x)+r.D){
+        g.appendChild(el("rect", {x:x-w, y:sy(wl), width:2*w, height:Math.max(0, sy(r.zInv(t.x)+r.D)-sy(wl)),
+          fill:"var(--water-fill)"}));
+        g.appendChild(el("line", {x1:x-w, y1:sy(wl), x2:x+w, y2:sy(wl),
+          stroke:"var(--water)", "stroke-width":2}));
+      }
+      if (t.spill){
+        g.appendChild(el("circle", {cx:x, cy:yTopP, r:5.5, fill:"var(--bad)"}));
+        g.appendChild(el("path", {d:`M ${x} ${yTopP-9} l -4 6 l 8 0 Z`, fill:"var(--bad)"}));
+        g.appendChild(el("path", {d:`M ${x-11} ${yTopP-3} q -7 -8 -14 -2`,
+          stroke:"var(--bad)", "stroke-width":1.6, fill:"none"}));
+      } else {
+        g.appendChild(el("circle", {cx:x, cy:yTopP, r:2.6, fill:"var(--surface)",
+          stroke:"var(--pipe)", "stroke-width":1.4}));
+      }
+    });
+
+    // ---- the fall + Y-T at the outlet ----
+    const xo = sx(0), yc = sy(r.D), yi = sy(0);
+    g.appendChild(el("line", {x1:xo, y1:yi, x2:xo, y2:H-M.b+16, stroke:"var(--pipe)", "stroke-width":2.2}));
+    g.appendChild(el("line", {x1:xo-(sy(0)-sy(r.D))*0.0+0, y1:yi, x2:xo, y2:yi, stroke:"none"}));
+    const wpx = Math.abs(sy(0)-sy(r.D))*0.42;
+    g.appendChild(el("line", {x1:xo-wpx, y1:yc, x2:xo-wpx, y2:H-M.b+16, stroke:"var(--pipe)", "stroke-width":2.2}));
+    // break symbol on the fall
+    g.appendChild(el("path", {d:`M ${xo-wpx-5} ${H-M.b+6} l ${wpx+10} -7`,
+      stroke:"var(--surface)", "stroke-width":6}));
+    g.appendChild(el("path", {d:`M ${xo-wpx-5} ${H-M.b+8} l ${wpx+10} -7 M ${xo-wpx-5} ${H-M.b+12} l ${wpx+10} -7`,
+      stroke:"var(--pipe)", "stroke-width":1.3, fill:"none"}));
+    // Y-T overflow stub
+    g.appendChild(el("line", {x1:xo-wpx, y1:yc, x2:xo-wpx-26, y2:yc, stroke:"var(--pipe)", "stroke-width":2.2}));
+    g.appendChild(el("line", {x1:xo-wpx, y1:yi, x2:xo-wpx-26, y2:yi, stroke:"var(--pipe)", "stroke-width":2.2}));
+    const ytActive = r.ytActive;
+    g.appendChild(txt(xo-wpx-30, sy(r.D/2)+3, "Y-T",
+      {"text-anchor":"end","font-size":9.5, fill: ytActive ? "var(--bad)" : "var(--muted)"}));
+    g.appendChild(txt(xo-wpx-30, sy(r.D/2)+15, ytActive ? "spilling" : "dry",
+      {"text-anchor":"end","font-size":8.5, fill: ytActive ? "var(--bad)" : "var(--muted)",
+       "font-style":"italic"}));
+    g.appendChild(txt(xo-wpx-30, sy(r.D/2)+26,
+      `fall takes ${(r.fallCap*1000).toFixed(0)} L/s`,
+      {"text-anchor":"end","font-size":8, fill:"var(--muted)"}));
+    g.appendChild(txt(xo+6, H-M.b+30, "↓ fall to the ditch",
+      {"font-size":9.5, fill:"var(--muted)"}));
+
+    // ---- ends ----
+    g.appendChild(txt(M.l, H-M.b+30, "OUTLET", {"font-size":9.5, fill:"var(--ink-2)",
+      "letter-spacing":".1em", "text-anchor":"start", opacity:0}));
+    g.appendChild(txt(W-M.r, H-M.b+30, "FAR END — where you saw water →",
+      {"text-anchor":"end","font-size":9.5, fill:"var(--ink-2)", "letter-spacing":".05em"}));
+
+    // ---- flow arrow ----
+    const ya = sy(yBot+0.28);
+    g.appendChild(el("path", {d:`M ${sx(r.L*0.62)} ${ya} L ${sx(r.L*0.34)} ${ya}`,
+      stroke:"var(--water-2)", "stroke-width":1.4}));
+    g.appendChild(el("path", {d:`M ${sx(r.L*0.34)} ${ya} l 9 -3.5 l 0 7 Z`, fill:"var(--water-2)"}));
+    g.appendChild(txt(sx(r.L*0.63), ya+3.5, `flow  ${(r.Qtot*1000).toFixed(0)} L/s at the outlet`,
+      {"font-size":9.5, fill:"var(--water-2)"}));
+
+    // ---- gradient callout ----
+    g.appendChild(txt(sx(r.L*0.5), sy(r.zInv(r.L*0.5))+16,
+      `Ø${p.d}"  ·  ${p.s.toFixed(2)}%`,
+      {"text-anchor":"middle","font-size":10, fill:"var(--ink-2)", "letter-spacing":".05em"}));
+  }
+
+  // ------------- wiring -------------
+  const ids = ["i","area","d","s","L","n","gs","hf","nb","db"];
+  const read = () => ({
+    i:+$("i").value, area:+$("area").value, d:+$("d").value, s:+$("s").value,
+    L:+$("L").value, n:+$("n").value, gs:+$("gs").value, hf:+$("hf").value,
+    nb:+$("nb").value, db:+$("db").value
+  });
+
+  function stat(k, v, n, cls){
+    return `<div class="stat"><span class="k">${k}</span>
+      <span class="v ${cls||""}">${v}</span><span class="n">${n}</span></div>`;
+  }
+
+  function update(){
+    const p = read();
+    $("i_v").textContent    = p.i + " mm/h";
+    $("area_v").textContent = p.area + " m²";
+    $("d_v").textContent    = p.d + " in";
+    $("s_v").textContent    = p.s.toFixed(2) + " %";
+    $("L_v").textContent    = p.L + " m";
+    $("n_v").textContent    = p.n.toFixed(4);
+    $("gs_v").textContent   = p.gs.toFixed(2) + " %" + (p.gs === 0 ? " (level)" : "");
+    $("hf_v").textContent   = p.hf.toFixed(2) + " m";
+    $("nb_v").textContent   = p.nb;
+
+    const r = solve(p);
+    draw(r, p);
+
+    const uc = r.util > 1 ? "bad" : r.util > 0.85 ? "warn" : "ok";
+    const ut = r.tuboUtil > 1 ? "bad" : r.tuboUtil > 0.85 ? "warn" : "ok";
+    const tSur = threshold(p, x => x.util > 1);
+    const tFld = threshold(p, x => x.spilling.length > 0);
+    const fmt  = v => v === null ? "—" : v.toFixed(0);
+
+    $("strip").innerHTML = [
+      stat("Flow at outlet", (r.Qtot*1000).toFixed(1), "L/s from " + p.area + " m²"),
+      stat("Collector capacity", (r.Qcap*1000).toFixed(1), `L/s · Ø${p.d}" @ ${p.s.toFixed(2)}%`),
+      stat("Collector load", (r.util*100).toFixed(0)+"%",
+           r.util > 1 ? "surcharged — running full" : "of free-surface capacity", uc),
+      stat("Boca tubo load", (r.tuboUtil*100).toFixed(0)+"%",
+           `${r.tuboLoad.toFixed(1)} / ${r.tuboRating} L/s rated`, ut),
+      stat("Surcharges above", fmt(tSur), "mm/h · pipe goes full",
+           tSur !== null && p.i > tSur ? "warn" : ""),
+      stat("Floods above", fmt(tFld), "mm/h · water back on the roof",
+           tFld !== null && p.i > tFld ? "bad" : "ok"),
+      stat("Spilling now", r.spilling.length + " of " + p.nb,
+           r.firstSpill === null ? "none" : `first at ${r.firstSpill.toFixed(0)} m from outlet`,
+           r.spilling.length ? "bad" : "ok")
+    ].join("");
+
+    const v = $("verdict"), t = $("verdictText");
+    v.className = "verdict " + (r.spilling.length ? "v-bad" : r.util > 1 ? "v-warn" : "v-ok");
+    t.textContent = r.spilling.length
+      ? `Flooding — ${r.spilling.length} boca tubo${r.spilling.length>1?"s":""}`
+      : r.util > 1 ? "Surcharged — full, not yet spilling" : "Within capacity";
+  }
+
+  ids.forEach(id => $(id).addEventListener("input", update));
+
+  const PRESETS = {
+    asbuilt:  {d:8,  s:1,   gs:0, i:120},
+    steeper:  {d:8,  s:2,   gs:0, i:120},
+    tenin:    {d:10, s:1,   gs:0, i:120},
+    both:     {d:10, s:2,   gs:0, i:120},
+    parallel: {d:8,  s:1,   gs:1, i:120}
+  };
+  document.querySelectorAll("button.preset").forEach(b => {
+    b.addEventListener("click", () => {
+      const q = PRESETS[b.dataset.p];
+      for (const k in q) $(k).value = q[k];
+      update();
+    });
+  });
+
+  update();
+})();
+</script>

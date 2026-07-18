@@ -1,0 +1,983 @@
+<meta charset="utf-8">
+<title>Bodega Triple — Roof Drainage</title>
+<style>
+  :root{
+    --ground:#EAECE7; --surface:#F7F8F4; --sunk:#DFE2DC;
+    --ink:#191F1D; --ink-2:#4A544F; --muted:#77827C;
+    --rule:#C9CFC7; --rule-2:#DDE1DA;
+    --water:#0E7C7B; --water-2:#3FA3A2; --water-fill:rgba(14,124,123,.16);
+    --bad:#B33F35; --warn:#B57C1E; --ok:#3F7350;
+    --pipe:#2B3330; --known:#3F7350; --assume:#B57C1E;
+    --shadow:0 1px 2px rgba(25,31,29,.06), 0 8px 24px -12px rgba(25,31,29,.18);
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --ground:#121615; --surface:#1A201E; --sunk:#0D1110;
+    --ink:#E6EBE8; --ink-2:#A9B4AE; --muted:#7E8A84;
+    --rule:#2C3532; --rule-2:#222A27;
+    --water:#3FC7C4; --water-2:#2A8F8D; --water-fill:rgba(63,199,196,.18);
+    --bad:#E6685B; --warn:#DDA340; --ok:#5FA274;
+    --pipe:#C3CCC7; --known:#5FA274; --assume:#DDA340;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }}
+  :root[data-theme="light"]{
+    --ground:#EAECE7; --surface:#F7F8F4; --sunk:#DFE2DC;
+    --ink:#191F1D; --ink-2:#4A544F; --muted:#77827C;
+    --rule:#C9CFC7; --rule-2:#DDE1DA;
+    --water:#0E7C7B; --water-2:#3FA3A2; --water-fill:rgba(14,124,123,.16);
+    --bad:#B33F35; --warn:#B57C1E; --ok:#3F7350;
+    --pipe:#2B3330; --known:#3F7350; --assume:#B57C1E;
+    --shadow:0 1px 2px rgba(25,31,29,.06), 0 8px 24px -12px rgba(25,31,29,.18);
+  }
+  :root[data-theme="dark"]{
+    --ground:#121615; --surface:#1A201E; --sunk:#0D1110;
+    --ink:#E6EBE8; --ink-2:#A9B4AE; --muted:#7E8A84;
+    --rule:#2C3532; --rule-2:#222A27;
+    --water:#3FC7C4; --water-2:#2A8F8D; --water-fill:rgba(63,199,196,.18);
+    --bad:#E6685B; --warn:#DDA340; --ok:#5FA274;
+    --pipe:#C3CCC7; --known:#5FA274; --assume:#DDA340;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans);
+    font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px; margin:0 auto; padding:26px 20px 64px}
+  header{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between}
+  .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 4px}
+  h1{margin:0; font-size:clamp(21px,2.8vw,29px); line-height:1.15; letter-spacing:-.02em;
+    font-weight:640; text-wrap:balance}
+  .sub{margin:6px 0 0; color:var(--ink-2); max-width:64ch; font-size:14px}
+  .verdict{display:flex; align-items:center; gap:10px; padding:9px 15px; border-radius:2px;
+    font-family:var(--mono); font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+    font-weight:600; border:1px solid currentColor; white-space:nowrap}
+  .verdict .dot{width:8px; height:8px; border-radius:50%; background:currentColor; flex:none}
+  .v-ok{color:var(--ok)} .v-warn{color:var(--warn)} .v-bad{color:var(--bad)}
+
+  /* tabs */
+  .tabs{display:flex; gap:2px; margin:22px 0 0; border-bottom:1px solid var(--rule)}
+  .tabs button{font-family:var(--mono); font-size:11.5px; letter-spacing:.09em; text-transform:uppercase;
+    padding:11px 18px; background:none; border:none; border-bottom:2px solid transparent;
+    color:var(--muted); cursor:pointer; font-weight:600; margin-bottom:-1px}
+  .tabs button:hover{color:var(--ink)}
+  .tabs button[aria-selected="true"]{color:var(--water); border-bottom-color:var(--water)}
+  .tabs button:focus-visible{outline:2px solid var(--water); outline-offset:-2px}
+  [role=tabpanel][hidden]{display:none}
+
+  .strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px;
+    background:var(--rule-2); border:1px solid var(--rule-2); margin:20px 0 22px;
+    border-radius:3px; overflow:hidden}
+  .stat{background:var(--surface); padding:11px 13px}
+  .stat .k{font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted); display:block; margin-bottom:5px}
+  .stat .v{font-family:var(--mono); font-size:20px; font-weight:600; font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em; display:block; line-height:1.1}
+  .stat .n{font-size:11px; color:var(--muted); margin-top:3px; display:block}
+  .stat .v.bad{color:var(--bad)} .stat .v.warn{color:var(--warn)} .stat .v.ok{color:var(--ok)}
+
+  .sheet{background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+    box-shadow:var(--shadow); padding:8px 8px 4px; margin-bottom:8px}
+  svg{display:block; width:100%; height:auto}
+  .cap{display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; font-family:var(--mono);
+    font-size:10.5px; color:var(--muted); letter-spacing:.06em; padding:0 6px 6px}
+  .grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:8px}
+
+  .legend{display:flex; flex-wrap:wrap; gap:16px; margin:0 0 24px; padding:10px 12px; font-size:12px;
+    color:var(--ink-2); background:var(--sunk); border-radius:3px; border:1px solid var(--rule-2)}
+  .legend span{display:inline-flex; align-items:center; gap:7px; white-space:nowrap}
+  .swatch{width:16px; height:0; border-top-width:2.5px; border-top-style:solid; flex:none}
+
+  .panels{display:grid; grid-template-columns:repeat(auto-fit,minmax(266px,1fr)); gap:14px}
+  fieldset{border:1px solid var(--rule); border-radius:3px; background:var(--surface);
+    padding:14px 16px 16px; margin:0; min-width:0}
+  legend{font-family:var(--mono); font-size:10px; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--ink); font-weight:600; padding:0 7px; background:var(--surface)}
+  .ctl{margin-top:13px} .ctl:first-of-type{margin-top:2px}
+  .ctl label{display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+    font-size:12.5px; color:var(--ink-2); margin-bottom:5px}
+  .ctl .val{font-family:var(--mono); font-size:12.5px; font-weight:600; color:var(--ink);
+    font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%; accent-color:var(--water); height:20px; margin:0}
+  input[type=range]:focus-visible{outline:2px solid var(--water); outline-offset:3px}
+  select{width:100%; font-family:var(--mono); font-size:12.5px; padding:5px 7px; background:var(--ground);
+    color:var(--ink); border:1px solid var(--rule); border-radius:2px}
+  .tag{font-family:var(--mono); font-size:8.5px; letter-spacing:.09em; text-transform:uppercase;
+    padding:1.5px 5px; border-radius:2px; border:1px solid currentColor; font-weight:600; flex:none}
+  .t-known{color:var(--known)} .t-assume{color:var(--assume)}
+  .hint{font-size:11.5px; color:var(--muted); margin:7px 0 0; line-height:1.45}
+  .presets{display:flex; gap:8px; flex-wrap:wrap; margin:24px 0 8px}
+  button.preset{font-family:var(--mono); font-size:11px; letter-spacing:.06em; padding:8px 13px;
+    border:1px solid var(--rule); background:var(--surface); color:var(--ink); border-radius:2px;
+    cursor:pointer}
+  button.preset:hover{border-color:var(--water); color:var(--water)}
+  button.preset:focus-visible{outline:2px solid var(--water); outline-offset:2px}
+  .note{margin-top:24px; padding:14px 16px; background:var(--sunk); border:1px solid var(--rule-2);
+    border-left:2px solid var(--water); border-radius:3px; font-size:13px; color:var(--ink-2)}
+  .note strong{color:var(--ink)} .note p{margin:0 0 8px} .note p:last-child{margin:0}
+  .note.flag{border-left-color:var(--warn)}
+  code{font-family:var(--mono); font-size:.9em; background:var(--ground); padding:1px 5px; border-radius:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">San Andrés Ofibodegas · Bodega Triple · Ciudad Arce</p>
+      <h1>Roof drainage — one collector</h1>
+      <p class="sub">Two questions, two tabs: where the water comes from, and where it comes back
+        out at you. Everything is live — drag and watch.</p>
+    </div>
+    <div class="verdict v-ok" id="verdict"><span class="dot"></span><span id="verdictText">—</span></div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-q" aria-controls="panel-q" aria-selected="false">① Runoff — where Q comes from</button>
+    <button role="tab" id="tab-s" aria-controls="panel-s" aria-selected="true">② Section — where it floods</button>
+  </div>
+
+  <!-- ================= RUNOFF ================= -->
+  <div role="tabpanel" id="panel-q" aria-labelledby="tab-q" hidden>
+    <div class="strip" id="qstrip"></div>
+
+    <div class="sheet">
+      <svg id="svgRain" viewBox="0 0 1060 300" role="img"
+           aria-label="Rain falling vertically on a pitched roof, showing that the catch is the horizontal projection"></svg>
+      <div class="cap"><span id="rainCap">—</span><span>Rain falls vertically — the catch is the shadow</span></div>
+    </div>
+
+    <div class="grid2">
+      <div class="sheet">
+        <svg id="chartPitch" viewBox="0 0 520 300" role="img" aria-label="Peak flow versus roof pitch"></svg>
+        <div class="cap"><span>Q vs roof pitch</span></div>
+      </div>
+      <div class="sheet">
+        <svg id="chartIDF" viewBox="0 0 520 300" role="img" aria-label="Rainfall intensity versus storm duration"></svg>
+        <div class="cap"><span>Intensity vs storm duration</span></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><i class="swatch" style="border-color:var(--water); border-top-width:3px"></i>Q from plan area — correct</span>
+      <span><i class="swatch" style="border-color:var(--bad); border-top-style:dashed"></i>Q if you used surface area — wrong</span>
+      <span><i class="swatch" style="border-color:var(--warn)"></i>Q with time-of-concentration feedback</span>
+    </div>
+
+    <div class="panels">
+      <fieldset>
+        <legend>Warehouse — three peaks</legend>
+        <div class="ctl">
+          <label for="peaks"><span>Peaks (gables) <span class="tag t-known">3 from CAD</span></span>
+            <span class="val" id="peaks_v">3</span></label>
+          <input type="range" id="peaks" min="1" max="5" step="1" value="3">
+        </div>
+        <div class="ctl">
+          <label for="wmod"><span>Module width <span class="tag t-known">'41.200' in CAD</span></span>
+            <span class="val" id="wmod_v">41.2 m</span></label>
+          <input type="range" id="wmod" min="10" max="60" step="0.1" value="41.2">
+        </div>
+        <div class="ctl">
+          <label for="blen"><span>Building length <span class="tag t-known">9 bays × 7.5 m</span></span>
+            <span class="val" id="blen_v">67.5 m</span></label>
+          <input type="range" id="blen" min="20" max="120" step="0.5" value="67.5">
+        </div>
+        <div class="ctl">
+          <label for="valley"><span>What happens at each valley? <span class="tag t-known">confirmed on site</span></span></label>
+          <select id="valley">
+            <option value="shared" selected>Double canaleta → 2 pipes, 9 boca tubos each</option>
+            <option value="split">2 separate canaletas, 1 pipe each</option>
+            <option value="single">Double canaleta → 1 pipe (the danger case)</option>
+          </select>
+          <p class="hint">Confirmed: each valley has one <strong>double</strong> canaleta (50×17 cm)
+            feeding <strong>two</strong> aerial pipes, 9 boca tubos each — so every pipe carries one
+            slope (~1,390 m²), eave or valley alike. The "1 pipe" case would double that and fail
+            at ~135 mm/h; you confirmed it is not built that way.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Roof</legend>
+        <div class="ctl">
+          <label for="pitch"><span>Pitch <span class="tag t-known">12% from CAD</span></span>
+            <span class="val" id="pitch_v">12 %</span></label>
+          <input type="range" id="pitch" min="0" max="60" step="1" value="12">
+          <p class="hint">Watch the solid line. It does not move.</p>
+        </div>
+        <div class="ctl">
+          <label for="nroof"><span>Roof roughness n <span class="tag t-assume">judgement</span></span>
+            <span class="val" id="nroof_v">0.012</span></label>
+          <input type="range" id="nroof" min="0.008" max="0.024" step="0.001" value="0.012">
+          <p class="hint">No EPA table has a sheet-metal roof row. 0.012 by analogy to smooth
+            concrete. Sheet-flow length is derived from the module: ridge to eave = half its width.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Rainfall — placeholder curve</legend>
+        <div class="ctl">
+          <label for="i10"><span>Anchor: i at 10 min <span class="tag t-assume">no local IDF</span></span>
+            <span class="val" id="i10_v">120 mm/h</span></label>
+          <input type="range" id="i10" min="40" max="300" step="5" value="120">
+          <p class="hint">120 mm/h is Ilopango's measured 2-year, 10-minute intensity. Raise it to
+            explore rarer storms — roughly ×1.5 for 10-yr, ×2 for 25-yr.</p>
+        </div>
+        <div class="ctl">
+          <label for="idfb"><span>Flattening term b</span><span class="val" id="idfb_v">10</span></label>
+          <input type="range" id="idfb" min="0" max="25" step="0.5" value="10">
+          <p class="hint">Set b to 0 and you get the bare power law El Salvador actually publishes —
+            watch it blow up below 5 min. That divergence is fiction; real rain has a ceiling.</p>
+        </div>
+        <div class="ctl">
+          <label for="idfc"><span>Exponent c</span><span class="val" id="idfc_v">0.75</span></label>
+          <input type="range" id="idfc" min="0.4" max="1.1" step="0.01" value="0.75">
+        </div>
+        <div class="ctl">
+          <label for="tother"><span>Gutter + pipe travel</span><span class="val" id="tother_v">1.5 min</span></label>
+          <input type="range" id="tother" min="0.2" max="8" step="0.1" value="1.5">
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="note flag">
+      <p><strong>The answer to your question, both halves.</strong> Pitch has <em>no</em> direct effect
+        on Q: rain falls vertically, so a roof catches its horizontal shadow. A 12% roof has 0.7% more
+        skin and catches exactly the same water. The solid line is flat, and it stays flat all the way
+        to 60%.</p>
+      <p>But pitch <em>does</em> change how fast the roof sheds — and a faster roof reads a higher
+        number off the rainfall curve, because short storms are more intense than long ones. Steepening
+        1%→12% cuts the time of concentration and lifts peak Q about 10%. Not nothing, but a different
+        mechanism entirely from area.</p>
+      <p><strong>Do not use the sloped surface area for Q.</strong> The dashed line shows what happens
+        if you do — harmless at 12%, badly wrong on a steep roof.</p>
+    </div>
+  </div>
+
+  <!-- ================= SECTION ================= -->
+  <div role="tabpanel" id="panel-s" aria-labelledby="tab-s">
+    <div class="strip" id="strip"></div>
+    <div class="strip" id="xcheck" style="margin-top:-14px"></div>
+    <div class="sheet">
+      <svg id="svg" viewBox="0 0 1060 430" role="img"
+           aria-label="Longitudinal section of the aerial collector showing the hydraulic grade line"></svg>
+      <div class="cap"><span id="veLabel">—</span><span>Longitudinal section · outlet left, far end right</span></div>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="border-color:var(--pipe)"></i>Pipe wall</span>
+      <span><i class="swatch" style="border-color:var(--water); border-top-width:3px"></i>HGL — where water wants to sit</span>
+      <span><i class="swatch" style="border-color:var(--bad); border-top-style:dashed"></i>Gutter lip — cross it and it spills</span>
+      <span><i class="swatch" style="border-color:var(--muted); border-top-style:dotted"></i>Pipe crown</span>
+    </div>
+
+    <div class="presets">
+      <button class="preset" data-p="asbuilt">As built</button>
+      <button class="preset" data-p="steeper">Re-hang at 2%</button>
+      <button class="preset" data-p="tenin">Re-pipe to 10"</button>
+      <button class="preset" data-p="both">10" at 2%</button>
+      <button class="preset" data-p="parallel">If the canaleta followed the pipe</button>
+      <button class="preset" data-p="sag">Hung off 3 m trusses</button>
+      <button class="preset" data-p="neglect">3 m trusses + silt + rough</button>
+    </div>
+
+    <div class="panels">
+      <fieldset>
+        <legend>Rain</legend>
+        <div class="ctl">
+          <label for="i"><span>Intensity</span><span class="val" id="i_v">120 mm/h</span></label>
+          <input type="range" id="i" min="20" max="400" step="5" value="120">
+          <p class="hint" id="tcHint">—</p>
+        </div>
+        <div class="ctl">
+          <label for="useTc"><span>Drive from tab ① (i at Tc)</span></label>
+          <select id="useTc"><option value="0">No — set intensity by hand</option>
+            <option value="1">Yes — use the runoff tab's Tc</option></select>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Aerial pipe — the one that fails</legend>
+        <div class="ctl">
+          <label for="area"><span>Plan area on this pipe <span class="tag t-known">derived ①</span></span>
+            <span class="val" id="area_v">1390 m²</span></label>
+          <input type="range" id="area" min="400" max="3200" step="10" value="1390">
+          <p class="hint">Set by the warehouse config on tab ①. Move it here to override.</p>
+        </div>
+        <div class="ctl">
+          <label for="d"><span>Diameter <span class="tag t-assume">verify</span></span>
+            <span class="val" id="d_v">8 in</span></label>
+          <input type="range" id="d" min="4" max="14" step="1" value="8">
+        </div>
+        <div class="ctl">
+          <label for="s"><span>Gradient as hung <span class="tag t-assume">measure this</span></span>
+            <span class="val" id="s_v">0.90 %</span></label>
+          <input type="range" id="s" min="0.2" max="3" step="0.05" value="0.9">
+          <p class="hint">The drawing says 1%. This is the grade of the <em>hangers</em> — sag
+            between them is handled separately below.</p>
+        </div>
+        <div class="ctl">
+          <label for="L"><span>Run length <span class="tag t-known">from CAD</span></span>
+            <span class="val" id="L_v">63 m</span></label>
+          <input type="range" id="L" min="20" max="100" step="0.5" value="63">
+        </div>
+        <div class="ctl">
+          <label for="n"><span>Wall roughness n <span class="tag t-assume">assumed</span></span>
+            <span class="val" id="n_v">0.011</span></label>
+          <input type="range" id="n" min="0.009" max="0.016" step="0.0005" value="0.011">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Sag &amp; dirt — the ageing terms</legend>
+        <div class="ctl">
+          <label for="hanger"><span>Hanger spacing <span class="tag t-known">0.87 m measured</span></span>
+            <span class="val" id="hanger_v">0.87 m</span></label>
+          <input type="range" id="hanger" min="0.8" max="4" step="0.01" value="0.87">
+          <p class="hint">Sag goes as spacing to the <strong>fourth power</strong>. IPC 308.5 wants
+            PVC supported every 1.22 m. Trusses are often 2–3 m apart, and pipe gets hung off
+            trusses. Drag this and watch.</p>
+        </div>
+        <div class="ctl">
+          <label for="cls"><span>Pipe class <span class="tag t-assume">verify</span></span></label>
+          <select id="cls"><option value="sch40" selected>Sch 40 DWV — stiffest</option>
+            <option value="sdr35">SDR-35 sewer</option><option value="sdr41">SDR-41 thin-wall</option></select>
+        </div>
+        <div class="ctl">
+          <label for="aged"><span>Age of the line</span></label>
+          <select id="aged"><option value="0">New — short-term stiffness</option>
+            <option value="1" selected>In service years — crept</option></select>
+          <p class="hint">PVC creeps: its effective stiffness falls ~3× under sustained load. A line
+            that drained when new can pond years later without anyone touching it.</p>
+        </div>
+        <div class="ctl">
+          <label for="silt"><span>Silt / debris in the invert</span><span class="val" id="silt_v">0 mm</span></label>
+          <input type="range" id="silt" min="0" max="60" step="1" value="0">
+          <p class="hint">Steals the fastest part of the bore and leaves the friction behind.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Canaleta &amp; boca tubos</legend>
+        <div class="ctl">
+          <label for="gs"><span>Canaleta gradient <span class="tag t-assume">inferred level</span></span>
+            <span class="val" id="gs_v">0.00 % (level)</span></label>
+          <input type="range" id="gs" min="0" max="3" step="0.05" value="0">
+          <p class="hint">Match it to the pipe and the flooding jumps to the outlet end — which is
+            not what you saw. Your observation is the evidence it is level.</p>
+        </div>
+        <div class="ctl">
+          <label for="gtype"><span>Canaleta type <span class="tag t-known">measured</span></span></label>
+          <select id="gtype">
+            <option value="single" selected>Single — 40 × 14 cm (eave, one slope)</option>
+            <option value="double">Double — 50 × 17 cm (valley, two slopes)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="ctl">
+          <label for="gwid"><span>Canaleta width <span class="tag t-known">measured</span></span>
+            <span class="val" id="gwid_v">0.40 m</span></label>
+          <input type="range" id="gwid" min="0.1" max="1.2" step="0.01" value="0.4">
+        </div>
+        <div class="ctl">
+          <label for="gdep"><span>Canaleta depth <span class="tag t-known">measured</span></span>
+            <span class="val" id="gdep_v">0.14 m</span></label>
+          <input type="range" id="gdep" min="0.05" max="0.8" step="0.01" value="0.14">
+          <p class="hint">You were right: you spill over the canaleta's <em>edge</em>, not its floor.
+            Its depth is real freeboard — 14 cm single, 17 cm double, from your measurements.</p>
+        </div>
+        <div class="ctl">
+          <label for="hf"><span>Pipe crown → canaleta floor, far end <span class="tag t-known">measured</span></span>
+            <span class="val" id="hf_v">0.93 m</span></label>
+          <input type="range" id="hf" min="0.05" max="2.5" step="0.01" value="0.93">
+          <p class="hint">Now measured: invert→canaleta floor is 1.13 m at the far end (0.93 m crown→floor)
+            and 1.65 m at the outlet — the gap grows because the pipe drops and the canaleta is level.
+            This ~0.93 m is your buffer before water tops the canaleta.</p>
+        </div>
+        <div class="ctl">
+          <label for="nb"><span>Boca tubos on this run <span class="tag t-assume">confirm split</span></span>
+            <span class="val" id="nb_v">9</span></label>
+          <input type="range" id="nb" min="1" max="20" step="1" value="9">
+          <p class="hint">You said <strong>9 total</strong> across the building. This is how many land on
+            this one collector — depends on the topology we still need to pin down.</p>
+        </div>
+        <div class="ctl">
+          <label for="db"><span>Boca tubo diameter <span class="tag t-known">6″ measured</span></span></label>
+          <select id="db"><option value="3">3 in</option><option value="4">4 in</option>
+            <option value="6" selected>6 in</option><option value="8">8 in</option></select>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="note">
+      <p><strong>Full is not flooding — and the gap is the story.</strong> Past <em>Surcharges above</em>
+        the pipe is running full and pressurised: over capacity, but nothing is on your roof yet. Water
+        climbs up inside the boca tubos instead. Only past <em>Floods above</em> has it climbed the whole
+        drop and come back out at the gutter. The distance between those numbers is your boca tubo drop
+        height — a buffer you own and have never measured.</p>
+      <p><strong>Method.</strong> Steady flow, one collector, <code>Q = C·i·A</code> with C = 0.95 on the
+        PLAN area. The water surface is marched upstream from the free outlet on Manning's friction
+        slope; where the pipe runs full it pressurises and the HGL climbs above the crown. The fall and
+        the boca tubos are rated as vertical leaders from the plumbing code (IPC 1106.3), not by Manning
+        — a vertical pipe runs as a film around an air core and Manning flatters it 6–8×.</p>
+      <p><strong>Limits.</strong> No time: a real storm rises and falls, and the pipe has storage worth
+        seconds. No air binding. No momentum through the Y-T. It assumes every boca tubo keeps taking its
+        full share right up until it spills. That is what the SWMM model is for — this is the instrument
+        you can put your hands on, and the check SWMM has to agree with.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ================================================================
+ * Bodega Triple — hydraulics core + UI.
+ * Self-contained on purpose: ES modules do not load over file://,
+ * and this has to open by double-clicking.
+ * ================================================================ */
+
+const IN = 0.0254, C_ROOF = 0.95;
+
+/* Plumbing-code VERTICAL LEADER ratings, IPC Table 1106.3 (gpm -> L/s).
+ * A leader runs as an annular film around an air core, NOT full bore, so Manning
+ * does not apply and overstates it ~6-8x. Table stops at 8"; it tracks D^(8/3) to
+ * within 1% across 4-8", so larger sizes are extrapolated on that exponent. */
+const LEADER_LPS = {2:1.89, 3:5.80, 4:12.11, 5:22.71, 6:35.51, 8:76.18,
+                    7:52.6, 9:101.9, 10:141.4, 11:178.4, 12:223.3, 13:271.6, 14:328.4};
+const leader = d => LEADER_LPS[d] !== undefined ? LEADER_LPS[d] : 76.18*Math.pow(d/8, 8/3);
+
+/* Circular segment filled to depth y. */
+function seg(y, D){
+  if (y <= 0) return {a:0, arc:0, th:0};
+  if (y >= D) return {a:Math.PI*D*D/4, arc:Math.PI*D, th:2*Math.PI};
+  const th = 2*Math.acos(1 - 2*y/D);
+  return {a: D*D/8*(th - Math.sin(th)), arc: D*th/2, th};
+}
+/* Flow section between a SEDIMENT bed of depth `hs` and a water depth `y`.
+ * Silt in the invert steals the most hydraulically efficient part of the bore:
+ * it removes area while leaving the wall friction, so it bites twice. */
+function section(y, D, hs){
+  hs = Math.max(0, Math.min(hs, D*0.9));
+  if (y <= hs) return {a:1e-9, r:1e-9};
+  const sy = seg(Math.min(y, D), D), ss = seg(hs, D);
+  const a = sy.a - ss.a;
+  const chord = hs > 0 ? D*Math.sin(ss.th/2) : 0;   // flat silt surface
+  const p = (sy.arc - ss.arc) + chord;
+  return {a: Math.max(a, 1e-9), r: Math.max(a/Math.max(p, 1e-9), 1e-9)};
+}
+const frictionSlope = (Q,y,D,n,hs) => { const g = section(y,D,hs||0);
+  return (n*n*Q*Q)/(g.a*g.a*Math.pow(g.r,4/3)); };
+const pipeCapacity = (D,S,n,hs) => { const g = section(D,D,hs||0);
+  return (1/n)*g.a*Math.pow(g.r,2/3)*Math.sqrt(Math.max(S,1e-6)); };
+function normalDepth(Q,D,S,n,hs){
+  if (Q <= 0) return 0;
+  const q = y => { const g = section(y,D,hs||0);
+    return (1/n)*g.a*Math.pow(g.r,2/3)*Math.sqrt(Math.max(S,1e-6)); };
+  if (q(D) < Q) return D;
+  let lo = (hs||0)+1e-6, hi = D;
+  for (let k=0;k<60;k++){ const m=(lo+hi)/2; if (q(m) < Q) lo=m; else hi=m; }
+  return (lo+hi)/2;
+}
+
+/* ---- SAG between hangers -------------------------------------------------
+ * delta = 5wL^4/(384 EI) — note the FOURTH power of hanger spacing.
+ * For a parabolic droop of depth d over span Lh laid at grade S, the local
+ * invert slope ranges S ± 4d/Lh. Once 4d/Lh > S the pipe runs UPHILL inside
+ * every span: it ponds, and must surcharge to push flow over each crest.
+ * IPC Table 308.5 requires PVC horizontal support every 4 ft = 1.22 m.
+ * E_long is the ~50-year creep modulus: PVC keeps sagging under load, which
+ * is why a line that worked when new can stop working later. */
+const PIPE_CLASS = {                      // OD, wall (m) for 8" nominal, scaled by d/8
+  sch40: {od:0.2191, wall:0.00818, name:"Sch 40 DWV"},
+  sdr35: {od:0.2134, wall:0.00610, name:"SDR-35 sewer"},
+  sdr41: {od:0.2191, wall:0.00534, name:"SDR-41 thin-wall"}
+};
+function sagOf(d_in, cls, Lh, E){
+  const k = d_in/8, c = PIPE_CLASS[cls] || PIPE_CLASS.sch40;
+  const OD = c.od*k, ID = (c.od - 2*c.wall)*k;
+  const I = Math.PI*(Math.pow(OD,4) - Math.pow(ID,4))/64;
+  const w = (Math.PI*(OD*OD - ID*ID)/4*1400 + Math.PI*ID*ID/4*1000)*9.81;   // N/m, running full
+  const delta = 5*w*Math.pow(Lh,4)/(384*E*I);
+  return {delta, adverse: 4*delta/Lh, w: w/9.81};
+}
+
+/* Rational method. A is the PLAN (horizontal) area: rain falls vertically, so a roof
+ * intercepts its horizontal shadow, not its sloped skin. */
+const rationalQ = (i_mmh, area, C) => (C===undefined?C_ROOF:C)*(i_mmh/1000/3600)*area;
+
+/* Sherman/Talbot IDF re-anchored so i(10 min) = i10. The +b term is what stops it
+ * diverging as t -> 0. Salvadoran published equations are bare power laws with NO +b,
+ * which is why they return 335-439 mm/h at 5 min where measured tables give 190-260.
+ * PLACEHOLDER SHAPE: no IDF curve exists within 17 km of this site. */
+const idf = (t, i10, b, c) => i10*Math.pow((10+b)/(t+b), c);
+
+/* Kinematic-wave sheet flow (Morgali & Linsley), SI:
+ *   t = 6.99 (n L)^0.6 / (i^0.4 S^0.3)   [min; L m; i mm/h; S m/m]
+ * Implicit in i, so iterate to a fixed point. */
+function timeOfConcentration(pitch, Ls, nr, tOther, idfFn){
+  const S = Math.max(pitch, 1e-4);
+  let t = 5;
+  for (let k=0;k<60;k++){
+    const i = idfFn(t);
+    t = 0.5*t + 0.5*(6.99*Math.pow(nr*Ls,0.6)/(Math.pow(i,0.4)*Math.pow(S,0.3)) + tOther);
+  }
+  const i = idfFn(t);
+  return {tc:t, tSheet: 6.99*Math.pow(nr*Ls,0.6)/(Math.pow(i,0.4)*Math.pow(S,0.3)), tOther, i};
+}
+
+function solveCollector(p){
+  const D = p.d*IN, S = p.s/100, gs = p.gs/100, L = p.L;
+  const hs = (p.silt || 0)/1000;                       // sediment bed, mm -> m
+  const Qtot = rationalQ(p.i, p.area);
+
+  /* Sag: the pipe still SITS at grade S, but inside every span the invert dips.
+   * The reach that controls free-surface flow is the flattest one, S - 4d/Lh.
+   * Once that goes negative the span ponds and the line can only pass flow by
+   * surcharging. So sag does not change the pressurised ceiling — it drags the
+   * pipe into pressurised operation far earlier, which is what puts water up
+   * the boca tubos. */
+  const sg = sagOf(p.d, p.cls, p.hanger, p.aged ? 1.0e9 : 2.76e9);
+  const Seff = Math.max(S - sg.adverse, 2e-4);
+  const ponds = (S - sg.adverse) <= 0;
+
+  const Qcap = pipeCapacity(D, Seff, p.n, hs);          // what it passes WITHOUT surcharging
+  const QcapIdeal = pipeCapacity(D, S, p.n, 0);         // the drawing's promise
+
+  const xs = []; for (let k=0;k<p.nb;k++) xs.push(L*(k+0.5)/p.nb);
+  const qEach = Qtot/p.nb;
+  const zInv = x => S*x;
+  /* Canaleta: `hf` of clearance from pipe crown to the gutter's INVERT at the far
+   * end; water then has to fill the gutter's depth before it tips over the edge.
+   * Spill threshold is the EDGE, not the invert. */
+  const G0 = p.hf + S*L + D - gs*L;
+  const gutInv = x => G0 + gs*x;
+  const gut = x => gutInv(x) + p.gdep;                  // the lip you actually spill over
+
+  const Qat = x => qEach*xs.filter(v => v > x).length;
+
+  const dx = 0.05, prof = [];
+  let hgl = zInv(0) + Math.min(normalDepth(Qat(0), D, Seff, p.n, hs), D);
+  for (let x = 0; x <= L+1e-9; x += dx){
+    const Q = Qat(x), z = zInv(x);
+    hgl = Math.max(hgl, z + Math.min(normalDepth(Q, D, Seff, p.n, hs), D));
+    prof.push({x, hgl, z, crown:z+D, g:gut(x), gi:gutInv(x), Q});
+    const y = Math.min(Math.max(hgl-z, hs+1e-6), D);
+    hgl += frictionSlope(Q, y, D, p.n, hs)*dx;
+  }
+  const at = x => prof.reduce((b,r) => Math.abs(r.x-x) < Math.abs(b.x-x) ? r : b, prof[0]);
+  const tubos = xs.map(x => { const r = at(x);
+    return {x, spill:r.hgl >= r.g-1e-6, free:r.g-r.hgl, hgl:r.hgl, g:r.g, gi:r.gi}; });
+  const spilling = tubos.filter(t => t.spill);
+
+  /* Canaleta conveyance: each boca tubo drains its own stretch, so the gutter carries
+   * at most half that stretch's runoff to the nearest inlet. A level gutter conveys on
+   * its water-surface slope, taken here as its own gradient floored at 0.1%. */
+  const gA = p.gwid*p.gdep, gR = gA/(p.gwid + 2*p.gdep);
+  const gCap = (1/0.013)*gA*Math.pow(gR, 2/3)*Math.sqrt(Math.max(gs, 0.001));
+  const gLoad = qEach/2;
+
+  /* The Y-T can only relieve anything if the FALL backs up, and the fall can only back
+   * up if the collector pushes more into it than it swallows. The collector's ceiling is
+   * itself bounded: once surcharged to the gutter lip, water leaves via the boca tubos
+   * rather than piling higher, so the driving gradient stops climbing. */
+  const fallCap = leader(p.d)/1000;
+  const qDeliverMax = pipeCapacity(D, S + (p.hf + p.gdep + S*L)/L, p.n, hs);
+
+  /* Model-predicted clearance (pipe invert -> canaleta floor) at the OUTLET end.
+   * We only fed it hf at the FAR end; this is derived from gradient x length, so
+   * comparing it to the independently-measured 1.65 m validates the geometry. */
+  const outletClear = G0;                              // invert(0)=0, so this is the gap at x=0
+
+  return {prof, tubos, spilling, D, S, L, gut, gutInv, zInv, Qtot, Qcap, QcapIdeal,
+    util:Qtot/Qcap, sag:sg, Seff, ponds, silt:hs, outletClear,
+    gCap, gLoad, gUtil: gLoad/gCap,
+    tuboLoad:qEach*1000, tuboRating:leader(p.db), tuboUtil:(qEach*1000)/leader(p.db),
+    fallCap, qDeliverMax, ytActive: Math.min(Qtot, qDeliverMax) > fallCap,
+    firstSpill: spilling.length ? Math.min(...spilling.map(t=>t.x)) : null};
+}
+function threshold(p, test){
+  let lo = 5, hi = 420;
+  if (!test(solveCollector(Object.assign({}, p, {i:hi})))) return null;
+  for (let k=0;k<42;k++){ const m=(lo+hi)/2;
+    if (test(solveCollector(Object.assign({}, p, {i:m})))) hi=m; else lo=m; }
+  return hi;
+}
+
+/* ---------------- svg helpers ---------------- */
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const el = (t,a) => { const n = document.createElementNS(NS,t);
+  for (const k in a) n.setAttribute(k, a[k]); return n; };
+const txt = (x,y,s,a) => { const n = el("text", Object.assign({x,y},a||{}));
+  n.textContent = s; return n; };
+const clear = n => { while (n.firstChild) n.removeChild(n.firstChild); };
+const stat = (k,v,n,cls) => {
+  const d = document.createElement("div"); d.className = "stat";
+  const a = document.createElement("span"); a.className = "k"; a.textContent = k;
+  const b = document.createElement("span"); b.className = "v" + (cls?" "+cls:""); b.textContent = v;
+  const c = document.createElement("span"); c.className = "n"; c.textContent = n;
+  d.append(a,b,c); return d;
+};
+const setStrip = (node, rows) => { clear(node); rows.forEach(r => node.appendChild(stat.apply(null,r))); };
+
+/* generic line chart */
+function chart(svg, opt){
+  clear(svg);
+  const W = 520, H = 300, M = {l:52, r:16, t:18, b:42};
+  const px = x => M.l + (x-opt.xmin)/(opt.xmax-opt.xmin)*(W-M.l-M.r);
+  const py = y => H-M.b - (y-opt.ymin)/(opt.ymax-opt.ymin)*(H-M.t-M.b);
+  const g = el("g", {"font-family":"ui-monospace,Menlo,monospace"}); svg.appendChild(g);
+  (opt.yticks||[]).forEach(v => {
+    g.appendChild(el("line",{x1:M.l,y1:py(v),x2:W-M.r,y2:py(v),stroke:"var(--rule-2)","stroke-width":1}));
+    g.appendChild(txt(M.l-7, py(v)+3.5, opt.yfmt?opt.yfmt(v):v,
+      {"text-anchor":"end","font-size":9,fill:"var(--muted)"}));
+  });
+  (opt.xticks||[]).forEach(v => {
+    g.appendChild(txt(px(v), H-M.b+15, opt.xfmt?opt.xfmt(v):v,
+      {"text-anchor":"middle","font-size":9,fill:"var(--muted)"}));
+  });
+  g.appendChild(el("line",{x1:M.l,y1:H-M.b,x2:W-M.r,y2:H-M.b,stroke:"var(--rule)","stroke-width":1}));
+  g.appendChild(txt(M.l-7, M.t-6, opt.ylab, {"text-anchor":"end","font-size":9,fill:"var(--muted)"}));
+  g.appendChild(txt(W-M.r, H-M.b+30, opt.xlab, {"text-anchor":"end","font-size":9.5,fill:"var(--muted)"}));
+  (opt.series||[]).forEach(s => {
+    let d = "";
+    s.pts.forEach((p,k) => { d += (k?" L ":"M ") + px(p[0]) + " " + py(p[1]); });
+    g.appendChild(el("path", Object.assign({d, fill:"none","stroke-linejoin":"round"}, s.attrs)));
+  });
+  (opt.marks||[]).forEach(m => {
+    g.appendChild(el("circle",{cx:px(m.x),cy:py(m.y),r:4,fill:m.color||"var(--water)"}));
+    if (m.label) g.appendChild(txt(px(m.x)+8, py(m.y)-7, m.label,
+      {"font-size":9.5, fill:m.color||"var(--water)"}));
+  });
+  return {px, py, g, W, H, M};
+}
+
+/* ---------------- read state ---------------- */
+const qIds = ["peaks","wmod","blen","valley","pitch","nroof","i10","idfb","idfc","tother"];
+const sIds = ["i","area","d","s","L","n","gs","gwid","gdep","gtype","hf","nb","db","useTc",
+              "hanger","cls","aged","silt"];
+const CANALETA = { single:[0.40,0.14], double:[0.50,0.17] };
+$("gtype").addEventListener("change", () => {
+  const c = CANALETA[$("gtype").value];
+  if (c){ $("gwid").value = c[0]; $("gdep").value = c[1]; }
+});
+["gwid","gdep"].forEach(id => $(id).addEventListener("input", () => { $("gtype").value = "custom"; }));
+
+/* Three peaks -> 3 gables -> 6 roof slopes. Each slope is half a module wide.
+ * A VALLEY sees two slopes; how much lands on one pipe depends on what is actually
+ * built there — hence the `valley` selector rather than an assumption. */
+function warehouse(){
+  const peaks = +$("peaks").value, w = +$("wmod").value, len = +$("blen").value;
+  const mode = $("valley").value;
+  const slope = (w/2)*len;                 // one roof slope, plan area
+  const roof = peaks*w*len;
+  const valleys = Math.max(peaks - 1, 0);
+  let pipes, perPipe;
+  if (mode === "split")       { pipes = 2*peaks;              perPipe = slope; }
+  else if (mode === "shared") { pipes = 2 + 2*valleys;        perPipe = slope; }
+  else                        { pipes = 2 + valleys;          perPipe = 2*slope; }
+  // eaves always take one slope; the worst-loaded pipe is what sizes the system
+  const worst = mode === "single" && valleys > 0 ? 2*slope : slope;
+  return {peaks, w, len, mode, roof, slope, valleys, pipes, perPipe, worst,
+          Ls: w/2};                        // ridge -> eave sheet-flow length
+}
+const readQ = () => { const h = warehouse();
+  return {pitch:+$("pitch").value/100, area:h.worst, Ls:h.Ls, nr:+$("nroof").value,
+    i10:+$("i10").value, b:+$("idfb").value, c:+$("idfc").value, tOther:+$("tother").value, wh:h}; };
+const readS = () => ({i:+$("i").value, area:+$("area").value, d:+$("d").value, s:+$("s").value,
+  L:+$("L").value, n:+$("n").value, gs:+$("gs").value, gwid:+$("gwid").value,
+  gdep:+$("gdep").value, hf:+$("hf").value, nb:+$("nb").value, db:+$("db").value,
+  hanger:+$("hanger").value, cls:$("cls").value, aged:$("aged").value === "1",
+  silt:+$("silt").value});
+
+/* ---------------- runoff tab ---------------- */
+function renderQ(){
+  const q = readQ();
+  const f = t => idf(t, q.i10, q.b, q.c);
+  const tcNow = timeOfConcentration(q.pitch, q.Ls, q.nr, q.tOther, f);
+  const surf = q.area*Math.sqrt(1 + q.pitch*q.pitch);
+  const qPlan = rationalQ(q.i10, q.area)*1000;             // at the 10-min anchor
+  const qTc   = rationalQ(tcNow.i, q.area)*1000;           // at i(Tc) — the honest one
+  const qSurf = rationalQ(tcNow.i, surf)*1000;
+
+  const h = q.wh;
+  $("peaks_v").textContent  = h.peaks;
+  $("wmod_v").textContent   = h.w.toFixed(1)+" m";
+  $("blen_v").textContent   = h.len.toFixed(1)+" m";
+  $("pitch_v").textContent  = (q.pitch*100).toFixed(0)+" %";
+  $("nroof_v").textContent  = q.nr.toFixed(3);
+  $("i10_v").textContent    = q.i10+" mm/h";
+  $("idfb_v").textContent   = q.b.toFixed(1) + (q.b===0?"  ← diverges!":"");
+  $("idfc_v").textContent   = q.c.toFixed(2);
+  $("tother_v").textContent = q.tOther.toFixed(1)+" min";
+  $("area").value = Math.round(h.worst/10)*10;      // drive the section tab
+
+  setStrip($("qstrip"), [
+    ["Whole roof", h.roof.toLocaleString(undefined,{maximumFractionDigits:0}),
+      `m² = ${h.peaks} × ${h.w} × ${h.len} m`],
+    ["Roof slopes", (2*h.peaks) + "", `${h.peaks} peaks × 2 sides, ${h.slope.toFixed(0)} m² each`],
+    ["Aerial pipes", h.pipes + "", h.mode==="single" ? "valleys share one pipe" : "one per slope"],
+    ["Worst-loaded pipe", h.worst.toLocaleString(undefined,{maximumFractionDigits:0}),
+      h.worst > h.slope ? "m² — a valley pipe takes BOTH slopes" : "m² — one roof slope",
+      h.worst > h.slope ? "bad" : ""],
+    ["Surface area", surf.toLocaleString(undefined,{maximumFractionDigits:0}),
+      ((surf/q.area-1)*100).toFixed(1) + "% more skin — same catch"],
+    ["Time of concentration", tcNow.tc.toFixed(2), "min — " + tcNow.tSheet.toFixed(2)
+      + " roof + " + q.tOther.toFixed(1) + " gutter/pipe"],
+    ["Intensity at Tc", tcNow.i.toFixed(0), "mm/h — not the 10-min number"],
+    ["Peak Q per pipe", qTc.toFixed(1), "L/s = C · i(Tc) · A_plan", "ok"]
+  ]);
+
+  /* rain-shadow diagram */
+  const sv = $("svgRain"); clear(sv);
+  const g = el("g",{"font-family":"ui-monospace,Menlo,monospace"}); sv.appendChild(g);
+  const cx = 530, halfW = 300, apex = 150 - Math.min(q.pitch*halfW*0.5, 105), base = 210;
+  g.appendChild(el("path",{d:`M ${cx-halfW} ${base} L ${cx} ${apex} L ${cx+halfW} ${base}`,
+    stroke:"var(--pipe)","stroke-width":3, fill:"none","stroke-linejoin":"round"}));
+  for (let k=0;k<=26;k++){                       // vertical rain
+    const x = cx-halfW + (2*halfW)*k/26;
+    const roofY = base - (1 - Math.abs(x-cx)/halfW)*(base-apex);
+    g.appendChild(el("line",{x1:x, y1:22, x2:x, y2:roofY-4, stroke:"var(--water-2)",
+      "stroke-width":1.1, "stroke-dasharray":"3 4", opacity:.75}));
+    g.appendChild(el("path",{d:`M ${x} ${roofY-2} l -2.5 -4 l 5 0 Z`, fill:"var(--water-2)", opacity:.85}));
+  }
+  g.appendChild(el("line",{x1:cx-halfW, y1:base+34, x2:cx+halfW, y2:base+34,
+    stroke:"var(--water)","stroke-width":2.5}));
+  [[cx-halfW],[cx+halfW]].forEach(([x]) =>
+    g.appendChild(el("line",{x1:x, y1:base, x2:x, y2:base+40, stroke:"var(--water)",
+      "stroke-width":1,"stroke-dasharray":"2 3"})));
+  g.appendChild(txt(cx, base+50, "PLAN AREA — the shadow. This is what catches rain.",
+    {"text-anchor":"middle","font-size":10.5, fill:"var(--water)","letter-spacing":".05em"}));
+  g.appendChild(txt(cx, apex-14, `pitch ${(q.pitch*100).toFixed(0)}%  ·  surface ${((surf/q.area-1)*100).toFixed(1)}% longer  ·  catch UNCHANGED`,
+    {"text-anchor":"middle","font-size":10.5, fill:"var(--ink-2)"}));
+  $("rainCap").textContent = `Tc ${tcNow.tc.toFixed(2)} min → i ${tcNow.i.toFixed(0)} mm/h → Q ${qTc.toFixed(1)} L/s`;
+
+  /* Q vs pitch */
+  const pl = [], sf = [], tf = [];
+  for (let pc=0; pc<=60; pc+=1){
+    const s = pc/100;
+    pl.push([pc, rationalQ(tcNow.i, q.area)*1000]);
+    sf.push([pc, rationalQ(tcNow.i, q.area*Math.sqrt(1+s*s))*1000]);
+    const t = timeOfConcentration(s, q.Ls, q.nr, q.tOther, f);
+    tf.push([pc, rationalQ(t.i, q.area)*1000]);
+  }
+  const allQ = pl.concat(sf, tf).map(p=>p[1]);
+  chart($("chartPitch"), {
+    xmin:0, xmax:60, ymin:0, ymax:Math.max.apply(null, allQ)*1.15,
+    xticks:[0,12,25,40,60], yticks:[0,20,40,60,80,100].filter(v=>v<=Math.max.apply(null,allQ)*1.15),
+    xlab:"roof pitch (%)", ylab:"Q (L/s)", yfmt:v=>v.toFixed(0),
+    series:[
+      {pts:sf, attrs:{stroke:"var(--bad)","stroke-width":2,"stroke-dasharray":"5 4"}},
+      {pts:tf, attrs:{stroke:"var(--warn)","stroke-width":2}},
+      {pts:pl, attrs:{stroke:"var(--water)","stroke-width":3}}
+    ],
+    marks:[{x:q.pitch*100, y:qTc, label:"you are here", color:"var(--ink-2)"}]
+  });
+
+  /* IDF */
+  const cur = [];
+  for (let t=0.5; t<=60; t+=0.25) cur.push([t, f(t)]);
+  chart($("chartIDF"), {
+    xmin:0, xmax:60, ymin:0, ymax:Math.min(500, f(0.5)*1.1),
+    xticks:[0,5,10,20,40,60], yticks:[0,100,200,300,400,500].filter(v=>v<=Math.min(500,f(0.5)*1.1)),
+    xlab:"storm duration (min)", ylab:"i (mm/h)", yfmt:v=>v.toFixed(0),
+    series:[{pts:cur, attrs:{stroke:"var(--water)","stroke-width":3}}],
+    marks:[{x:tcNow.tc, y:tcNow.i, label:`Tc ${tcNow.tc.toFixed(1)} min → ${tcNow.i.toFixed(0)} mm/h`,
+            color:"var(--bad)"},
+           {x:10, y:f(10), label:"10-min anchor", color:"var(--muted)"}]
+  });
+  return tcNow;
+}
+
+/* ---------------- section tab ---------------- */
+function drawSection(r, p){
+  const svg = $("svg"); clear(svg);
+  const M = {l:52, r:26, t:26, b:44}, W = 1060, H = 430;
+  const PW = W-M.l-M.r, PH = H-M.t-M.b;
+  const yTop = Math.max(r.gut(0), r.gut(r.L)) + 0.22, yBot = -0.75;
+  const sx = x => M.l + (x/r.L)*PW, sy = z => M.t + (yTop-z)/(yTop-yBot)*PH;
+  $("veLabel").textContent = `Vertical exaggeration ×${((PW/r.L)/(PH/(yTop-yBot))).toFixed(0)}`
+    + ` · horizontal ${r.L.toFixed(0)} m · vertical ${(yTop-yBot).toFixed(2)} m`;
+  const g = el("g",{"font-family":"ui-monospace,Menlo,monospace"}); svg.appendChild(g);
+
+  for (let z=Math.ceil(yBot*2)/2; z<=yTop; z+=0.5){
+    g.appendChild(el("line",{x1:M.l,y1:sy(z),x2:W-M.r,y2:sy(z),stroke:"var(--rule-2)","stroke-width":1}));
+    g.appendChild(txt(M.l-8, sy(z)+3.5, z.toFixed(1),{"text-anchor":"end","font-size":9,fill:"var(--muted)"}));
+  }
+  /* Canaleta drawn as a real channel: floor, edge, and the water standing in it.
+   * You spill over the EDGE, not the floor — its depth is genuine freeboard. */
+  const gFloor = `M ${sx(0)} ${sy(r.gutInv(0))} L ${sx(r.L)} ${sy(r.gutInv(r.L))}`;
+  const gEdge  = `M ${sx(0)} ${sy(r.gut(0))} L ${sx(r.L)} ${sy(r.gut(r.L))}`;
+  g.appendChild(el("path",{d:`${gFloor} L ${sx(r.L)} ${sy(r.gut(r.L))} L ${sx(0)} ${sy(r.gut(0))} Z`,
+    fill:"var(--sunk)", stroke:"none"}));
+  g.appendChild(el("path",{d:gFloor, stroke:"var(--pipe)","stroke-width":2.5, fill:"none"}));
+  g.appendChild(el("path",{d:gEdge, stroke:"var(--pipe)","stroke-width":1.6, fill:"none"}));
+  g.appendChild(el("path",{d:gEdge, stroke:"var(--bad)","stroke-width":1.2,"stroke-dasharray":"5 4",
+    fill:"none", opacity:.85}));
+  for (let k=0;k<=24;k++){ const x = sx(r.L*k/24), yy = sy(r.gut(r.L*k/24));
+    g.appendChild(el("line",{x1:x,y1:yy,x2:x-7,y2:yy-9,stroke:"var(--rule)","stroke-width":1})); }
+  g.appendChild(txt(sx(r.L*0.5), sy(Math.max(r.gut(0),r.gut(r.L)))-13,
+    (p.gs===0 ? "CANALETA — level" : `CANALETA — ${p.gs.toFixed(2)}%`)
+      + ` · ${(p.gwid*100).toFixed(0)}×${(p.gdep*100).toFixed(0)} cm`,
+    {"text-anchor":"middle","font-size":9.5,fill:"var(--muted)","letter-spacing":".08em"}));
+
+  /* silt bed */
+  if (r.silt > 0){
+    let sd = "";
+    r.prof.forEach((q,k) => { sd += (k?" L ":"M ")+sx(q.x)+" "+sy(q.z + r.silt); });
+    g.appendChild(el("path",{d:sd, stroke:"var(--warn)","stroke-width":2, fill:"none"}));
+  }
+
+  let fill = `M ${sx(0)} ${sy(r.prof[0].z)}`;
+  r.prof.forEach(q => { fill += ` L ${sx(q.x)} ${sy(Math.min(q.hgl,q.crown))}`; });
+  for (let k=r.prof.length-1;k>=0;k--) fill += ` L ${sx(r.prof[k].x)} ${sy(r.prof[k].z)}`;
+  g.appendChild(el("path",{d:fill+" Z", fill:"var(--water-fill)", stroke:"none"}));
+
+  const line = (key,a) => { let d="";
+    r.prof.forEach((q,k) => { d += (k?" L ":"M ")+sx(q.x)+" "+sy(q[key]); });
+    g.appendChild(el("path", Object.assign({d, fill:"none"}, a))); };
+  line("crown",{stroke:"var(--muted)","stroke-width":1.2,"stroke-dasharray":"3 3"});
+  line("z",{stroke:"var(--pipe)","stroke-width":2.2});
+  line("hgl",{stroke:"var(--water)","stroke-width":3,"stroke-linejoin":"round"});
+
+  r.tubos.forEach(t => {
+    const x = sx(t.x), yT = sy(t.g), yB = sy(r.zInv(t.x)+r.D), w = 3.2;
+    g.appendChild(el("line",{x1:x-w,y1:yT,x2:x-w,y2:yB,stroke:"var(--pipe)","stroke-width":1.6}));
+    g.appendChild(el("line",{x1:x+w,y1:yT,x2:x+w,y2:yB,stroke:"var(--pipe)","stroke-width":1.6}));
+    const wl = Math.min(t.hgl, t.g);
+    if (wl > r.zInv(t.x)+r.D){
+      g.appendChild(el("rect",{x:x-w, y:sy(wl), width:2*w,
+        height:Math.max(0, sy(r.zInv(t.x)+r.D)-sy(wl)), fill:"var(--water-fill)"}));
+      g.appendChild(el("line",{x1:x-w,y1:sy(wl),x2:x+w,y2:sy(wl),stroke:"var(--water)","stroke-width":2}));
+    }
+    if (t.spill){
+      g.appendChild(el("circle",{cx:x,cy:yT,r:5.5,fill:"var(--bad)"}));
+      g.appendChild(el("path",{d:`M ${x} ${yT-9} l -4 6 l 8 0 Z`, fill:"var(--bad)"}));
+      g.appendChild(el("path",{d:`M ${x-11} ${yT-3} q -7 -8 -14 -2`, stroke:"var(--bad)",
+        "stroke-width":1.6, fill:"none"}));
+    } else {
+      g.appendChild(el("circle",{cx:x,cy:yT,r:2.6,fill:"var(--surface)",stroke:"var(--pipe)","stroke-width":1.4}));
+    }
+  });
+
+  const xo = sx(0), yc = sy(r.D), yi = sy(0), wpx = Math.abs(sy(0)-sy(r.D))*0.42;
+  g.appendChild(el("line",{x1:xo,y1:yi,x2:xo,y2:H-M.b+16,stroke:"var(--pipe)","stroke-width":2.2}));
+  g.appendChild(el("line",{x1:xo-wpx,y1:yc,x2:xo-wpx,y2:H-M.b+16,stroke:"var(--pipe)","stroke-width":2.2}));
+  g.appendChild(el("path",{d:`M ${xo-wpx-5} ${H-M.b+6} l ${wpx+10} -7`, stroke:"var(--surface)","stroke-width":6}));
+  g.appendChild(el("path",{d:`M ${xo-wpx-5} ${H-M.b+8} l ${wpx+10} -7 M ${xo-wpx-5} ${H-M.b+12} l ${wpx+10} -7`,
+    stroke:"var(--pipe)","stroke-width":1.3, fill:"none"}));
+  g.appendChild(el("line",{x1:xo-wpx,y1:yc,x2:xo-wpx-26,y2:yc,stroke:"var(--pipe)","stroke-width":2.2}));
+  g.appendChild(el("line",{x1:xo-wpx,y1:yi,x2:xo-wpx-26,y2:yi,stroke:"var(--pipe)","stroke-width":2.2}));
+  g.appendChild(txt(xo-wpx-30, sy(r.D/2)+3, "Y-T",
+    {"text-anchor":"end","font-size":9.5, fill:r.ytActive?"var(--bad)":"var(--muted)"}));
+  g.appendChild(txt(xo-wpx-30, sy(r.D/2)+15, r.ytActive?"spilling":"dry",
+    {"text-anchor":"end","font-size":8.5, fill:r.ytActive?"var(--bad)":"var(--muted)","font-style":"italic"}));
+  g.appendChild(txt(xo-wpx-30, sy(r.D/2)+26, `fall takes ${(r.fallCap*1000).toFixed(0)} L/s`,
+    {"text-anchor":"end","font-size":8, fill:"var(--muted)"}));
+  g.appendChild(txt(xo+6, H-M.b+30, "↓ fall to the ditch",{"font-size":9.5,fill:"var(--muted)"}));
+  g.appendChild(txt(W-M.r, H-M.b+30, "FAR END — where you saw water →",
+    {"text-anchor":"end","font-size":9.5,fill:"var(--ink-2)","letter-spacing":".05em"}));
+
+  const ya = sy(yBot+0.28);
+  g.appendChild(el("path",{d:`M ${sx(r.L*0.62)} ${ya} L ${sx(r.L*0.34)} ${ya}`,
+    stroke:"var(--water-2)","stroke-width":1.4}));
+  g.appendChild(el("path",{d:`M ${sx(r.L*0.34)} ${ya} l 9 -3.5 l 0 7 Z`, fill:"var(--water-2)"}));
+  g.appendChild(txt(sx(r.L*0.63), ya+3.5, `flow  ${(r.Qtot*1000).toFixed(0)} L/s at the outlet`,
+    {"font-size":9.5, fill:"var(--water-2)"}));
+  g.appendChild(txt(sx(r.L*0.5), sy(r.zInv(r.L*0.5))+16, `Ø${p.d}"  ·  ${p.s.toFixed(2)}%`,
+    {"text-anchor":"middle","font-size":10, fill:"var(--ink-2)","letter-spacing":".05em"}));
+}
+
+function renderS(tcNow){
+  if ($("useTc").value === "1"){
+    $("i").value = Math.min(400, Math.max(20, Math.round(tcNow.i/5)*5));
+  }
+  const p = readS();
+  $("i_v").textContent = p.i+" mm/h";
+  $("area_v").textContent = p.area+" m²";
+  $("d_v").textContent = p.d+" in";
+  $("s_v").textContent = p.s.toFixed(2)+" %";
+  $("L_v").textContent = p.L+" m";
+  $("n_v").textContent = p.n.toFixed(4);
+  $("gs_v").textContent = p.gs.toFixed(2)+" %"+(p.gs===0?" (level)":"");
+  $("gwid_v").textContent = p.gwid.toFixed(2)+" m";
+  $("gdep_v").textContent = p.gdep.toFixed(2)+" m";
+  $("hf_v").textContent = p.hf.toFixed(2)+" m";
+  $("nb_v").textContent = p.nb;
+  $("hanger_v").textContent = p.hanger.toFixed(2)+" m";
+  $("silt_v").textContent = p.silt+" mm";
+  $("tcHint").textContent = `Tab ① says this roof concentrates in ${tcNow.tc.toFixed(2)} min,`
+    + ` which reads ${tcNow.i.toFixed(0)} mm/h off the curve.`;
+
+  const r = solveCollector(p);
+  drawSection(r, p);
+  const tSur = threshold(p, x => x.util > 1), tFld = threshold(p, x => x.spilling.length > 0);
+  const fmt = v => v === null ? "—" : v.toFixed(0);
+  const lost = (1 - r.Qcap/r.QcapIdeal)*100;
+  setStrip($("strip"), [
+    ["Flow at outlet", (r.Qtot*1000).toFixed(1), "L/s from "+p.area+" m²"],
+    ["Pipe capacity now", (r.Qcap*1000).toFixed(1),
+      lost > 1 ? `L/s — ${lost.toFixed(0)}% lost to sag/silt` : `L/s · Ø${p.d}" @ ${p.s.toFixed(2)}%`,
+      lost > 25 ? "bad" : lost > 5 ? "warn" : ""],
+    ["Pipe load", (r.util*100).toFixed(0)+"%",
+      r.util>1?"surcharged — running full":"of free-surface capacity",
+      r.util>1?"bad":r.util>0.85?"warn":"ok"],
+    ["Sag between hangers", (r.sag.delta*1000).toFixed(1),
+      r.ponds ? `mm → runs UPHILL (${(r.sag.adverse*100).toFixed(2)}% adverse)`
+              : `mm → net grade ${((p.s/100 - r.sag.adverse)*100).toFixed(2)}%`,
+      r.ponds ? "bad" : r.sag.adverse*100 > p.s*0.5 ? "warn" : "ok"],
+    ["Canaleta load", (r.gUtil*100).toFixed(0)+"%",
+      `${(r.gLoad*1000).toFixed(1)} / ${(r.gCap*1000).toFixed(0)} L/s channel capacity`,
+      r.gUtil>1?"bad":r.gUtil>0.85?"warn":"ok"],
+    ["Boca tubo load", (r.tuboUtil*100).toFixed(0)+"%",
+      `${r.tuboLoad.toFixed(1)} / ${r.tuboRating.toFixed(1)} L/s rated`,
+      r.tuboUtil>1?"bad":r.tuboUtil>0.85?"warn":"ok"],
+    ["Surcharges above", fmt(tSur), "mm/h · pipe goes full", tSur!==null&&p.i>tSur?"warn":""],
+    ["Floods above", fmt(tFld), "mm/h · over the canaleta edge", tFld!==null&&p.i>tFld?"bad":"ok"],
+    ["Spilling now", r.spilling.length+" of "+p.nb,
+      r.firstSpill===null?"none":`first at ${r.firstSpill.toFixed(0)} m from outlet`,
+      r.spilling.length?"bad":"ok"]
+  ]);
+
+  /* Cross-check: the model predicts the outlet-end clearance from (far-end hf +
+   * gradient × length); you measured it independently at 1.65 m. Agreement validates
+   * the geometry that everything else rides on. */
+  const measuredOutlet = 1.65, dOut = r.outletClear - measuredOutlet;
+  $("xcheck").innerHTML = "";
+  $("xcheck").appendChild(stat("Geometry cross-check",
+    `${r.outletClear.toFixed(2)} vs 1.65 m`,
+    `model outlet clearance vs your measurement · Δ ${(dOut*100>=0?"+":"")}${(dOut*100).toFixed(0)} cm`,
+    Math.abs(dOut) < 0.10 ? "ok" : Math.abs(dOut) < 0.25 ? "warn" : "bad"));
+  const v = $("verdict");
+  v.className = "verdict " + (r.spilling.length ? "v-bad" : r.util>1 ? "v-warn" : "v-ok");
+  $("verdictText").textContent = r.spilling.length
+    ? `Flooding — ${r.spilling.length} boca tubo${r.spilling.length>1?"s":""}`
+    : r.util>1 ? "Surcharged — full, not yet spilling" : "Within capacity";
+}
+
+const update = () => renderS(renderQ());
+qIds.concat(sIds).forEach(id => $(id).addEventListener("input", update));
+
+const PRESETS = {
+  asbuilt:{d:8,s:1,gs:0,hanger:1.22,silt:0}, steeper:{d:8,s:2,gs:0}, tenin:{d:10,s:1,gs:0},
+  both:{d:10,s:2,gs:0}, parallel:{d:8,s:1,gs:1},
+  sag:{d:8,s:1,gs:0,hanger:3.0,silt:0},          // hung off 3 m trusses, crept
+  neglect:{d:8,s:1,gs:0,hanger:3.0,silt:25,n:0.014}
+};
+document.querySelectorAll("button.preset").forEach(b => b.addEventListener("click", () => {
+  const q = PRESETS[b.dataset.p];
+  for (const k in q) $(k).value = q[k];
+  update();
+}));
+
+/* tabs */
+const tabs = [["tab-q","panel-q"],["tab-s","panel-s"]];
+tabs.forEach(([t,pn]) => $(t).addEventListener("click", () => {
+  tabs.forEach(([t2,p2]) => {
+    const on = t2 === t;
+    $(t2).setAttribute("aria-selected", on ? "true" : "false");
+    $(p2).hidden = !on;
+  });
+  update();
+}));
+
+update();
+})();
+</script>
