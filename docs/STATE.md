@@ -1,17 +1,16 @@
 # STATE — Bodega Triple stormwater sim
-
 _Updated 2026-07-18._
 
 ## Current position
 - Steady-state sim of ONE aerial collector: 3 tabs (Runoff ①, Section ②, Relief ③).
   `sim/index.html` (self-contained, file://) + `sim/verify.mjs`. Artifact:
   https://claude.ai/code/artifact/bffe0f46-2342-40d6-a44c-dfef82d8f9f9
-- SHIPPED: Y-T relief momentum-split tab ③ (merged to main `7822919`, pushed, republished).
-- IMPLEMENTED (branch `feat/outlet-relief-coupling`, not yet merged/pushed/republished): tab ②
-  now couples the outlet (fall + relief) into the flood model — an overloaded outlet backs up
-  and lifts the HGL, toggled by a relief on/off control. Two pre-existing bugs fixed: `fallCap`
-  now uses the FALL diameter, not the collector's; `qDeliverMax` gradient no longer double-counts
-  slope. A 10″ re-pipe over the 8″ fall makes the relief effective under a clear outlet.
+- SHIPPED: Y-T momentum-split tab ③ (`7822919`) + outlet–relief coupling tab ② (merged main
+  `4bc93b8`, pushed, republished). Tab ② makes the outlet a real bottleneck: overloaded → backs
+  up → lifts the HGL, with a relief on/off toggle. Fixed two latent bugs: `fallCap` uses the FALL
+  Ø (not collector Ø); `qDeliverMax` gradient no longer double-counts slope. A 10″ re-pipe over the
+  8″ fall makes the relief effective under a clear outlet (floods ~490 mm/h w/ relief vs 208 w/o;
+  flood-search ceiling raised 420→600 to observe that crossing; the w/ vs w/o readout is null-safe).
 
 ## System, as measured on site
 - Roof 8,343 m² (123.6 × 67.5 m, 3 gables), plan area (pitch does NOT change Q).
@@ -29,6 +28,7 @@ _Updated 2026-07-18._
 ## Open leads
 1. INSPECT pipe interiors for silt/blockage — cheapest "worked for years then failed" explanation.
 2. SWMM build for timing/storage (design storms per return period). Refs in `refs/`.
+3. Optional tab-② refinements: expose relief Ø as its own input (today = collector Ø, overstates ~1.56× if a 10″ re-pipe keeps an 8″ relief); bend loss in Krel.
 
 ## Conventions
 - Self-contained `sim/index.html`; `<meta charset="utf-8">` FIRST line; `node sim/verify.mjs` green
@@ -36,5 +36,5 @@ _Updated 2026-07-18._
 - Vertical leaders = IPC orifice rating, NEVER Manning; the RELIEF is horizontal ⇒ pipe losses apply.
 - Provenance tags `class="tag t-known"` / `class="tag t-assume"` (no `measured`/`assumed` modifier).
 - Honesty: relief can't help an UPSTREAM-caused far-end flood; CAN help a BACKUP-caused one.
-- Git: origin `github.com/jmmas123/plumbing-sim`, main at `1224d96`. Branch before implementing;
+- Git: origin `github.com/jmmas123/plumbing-sim`, main at `4bc93b8` (pushed). Branch before implementing;
   merge/push + republish (Artifact `url=` the URL above, favicon 🌧️) at the end.
