@@ -612,8 +612,32 @@ function solveCollector(p){
 
   const Qat = x => qEach*xs.filter(v => v > x).length;
 
+  /* ---- OUTLET THROUGHPUT (fall + relief) sets the downstream HGL boundary ----
+   * The fall is a leader capped by the FALL diameter (0 if blocked). The relief
+   * carries only the overflow the fall cannot, as a short horizontal PIPE
+   * (entrance + friction + exit head-loss), engaging at ~crown — a conservative
+   * lower bound (it truly wets earlier; the tab-③ momentum diversion is ignored
+   * here). When nothing carries the overflow the outlet drowns to the canaleta lip. */
+  const dFall = p.ytFall || p.d;
+  const fallCap = (p.ytBlocked ? 0 : leader(dFall))/1000;
+  const qDeliverMax = pipeCapacity(D, S + (p.hf + p.gdep)/L, p.n, hs);   // far-end lip -> outlet crown
+  const Qarr  = Math.min(Qtot, qDeliverMax);
+  const qOver = Math.max(0, Qarr - fallCap);
+  const reliefOn = p.reliefOn !== false;                                 // default: modeled
+  const Arel = Math.PI/4 * Math.pow(p.d*IN, 2);                          // relief = collector's straight run
+  const Lrel = p.Lrel != null ? p.Lrel : 3;                             // relief run length (m)
+  const fDarcy = 8*GRAV*p.n*p.n / Math.pow(D/4, 1/3);                    // Darcy f from Manning n
+  const Krel = 1 + 0.5 + fDarcy*Lrel/D;                                  // exit + entrance + friction
+  const lipHead = gut(0) - zInv(0);                                      // outlet canaleta lip above invert
+  let Hout;
+  if (qOver <= 0)     Hout = Math.min(normalDepth(Qarr, D, Seff, p.n, hs), D);   // free outlet
+  else if (reliefOn)  Hout = D + Krel*Math.pow(qOver/Arel, 2)/(2*GRAV);          // crown + relief pipe head
+  else                Hout = lipHead;                                            // drowned to the lip
+  Hout = Math.min(Hout, lipHead);
+  const outletBackup = Hout > D + 1e-9;
+
   const dx = 0.05, prof = [];
-  let hgl = zInv(0) + Math.min(normalDepth(Qat(0), D, Seff, p.n, hs), D);
+  let hgl = zInv(0) + Math.max(Math.min(normalDepth(Qat(0), D, Seff, p.n, hs), D), Hout);
   for (let x = 0; x <= L+1e-9; x += dx){
     const Q = Qat(x), z = zInv(x);
     hgl = Math.max(hgl, z + Math.min(normalDepth(Q, D, Seff, p.n, hs), D));
@@ -637,14 +661,7 @@ function solveCollector(p){
    * up if the collector pushes more into it than it swallows. The collector's ceiling is
    * itself bounded: once surcharged to the gutter lip, water leaves via the boca tubos
    * rather than piling higher, so the driving gradient stops climbing. */
-  const dFall = p.ytFall || p.d;                        // the fall may differ from the collector
-  const fallCap = (p.ytBlocked ? 0 : leader(dFall))/1000;
-  /* Delivery ceiling: driving head = far-end canaleta lip -> outlet crown, over L.
-   * grad = S + (hf+gdep)/L. The old form S + (hf+gdep+S*L)/L expanded to 2S+(hf+gdep)/L,
-   * double-counting the invert slope. */
-  const qDeliverMax = pipeCapacity(D, S + (p.hf + p.gdep)/L, p.n, hs);
-
-  const relief = reliefSplit(Math.min(Qtot, qDeliverMax), {
+  const relief = reliefSplit(Qarr, {
     dPipe: p.d, dFall: p.ytFall || p.d,
     angleDeg: (p.ytAngle != null ? p.ytAngle : 90),
     h: (p.ytHead != null ? p.ytHead : 0.3),
@@ -660,6 +677,7 @@ function solveCollector(p){
     gCap, gLoad, gUtil: gLoad/gCap,
     tuboLoad:qEach*1000, tuboRating:leader(p.db), tuboUtil:(qEach*1000)/leader(p.db),
     fallCap, qDeliverMax, ytActive: Math.min(Qtot, qDeliverMax) > fallCap,
+    qArr: Qarr, qOver, reliefOn, Hout, outletBackup,
     reliefFrac: relief.reliefFrac, qStraight: relief.qStraight, qFall: relief.qFall,
     reliefMech: relief.mechanism,
     firstSpill: spilling.length ? Math.min(...spilling.map(t=>t.x)) : null};

@@ -165,5 +165,38 @@ ok('a blocked outlet zeroes the fall cap',
 ok('qDeliverMax gradient no longer double-counts slope (base)',
   M.solveCollector(base).qDeliverMax * 1000, 58.2, 1.0);
 
+console.log("\nINVARIANT — outlet backup coupling");
+const clr8  = { ...base };                                  // as-built 8" collector, 8" fall, clear
+const rep10 = { ...base, d: 10, ytFall: 8 };                // 10" re-pipe over the existing 8" fall
+inv("as-built clear outlet: relief is redundant (thresholds match)",
+  Math.abs(fld({ ...clr8, reliefOn: true }) - fld({ ...clr8, reliefOn: false })) < 3,
+  `with ${fld({...clr8,reliefOn:true}).toFixed(0)} vs without ${fld({...clr8,reliefOn:false}).toFixed(0)} mm/h`);
+/* fld() returns null when spilling.length stays 0 across the ENTIRE 5-420 mm/h search
+ * bracket (M.threshold's fixed ceiling) — i.e. "does not flood even at the ceiling."
+ * That is a TRUE upper case for a relief-helps comparison, not a missing value: raw
+ * `>` would coerce null to 0 and silently read it as "worse," and `.toFixed` on null
+ * throws. Neither the assertion, its +3 tolerance, nor rep10/clr8's inputs change below —
+ * this only makes a null "never floods in range" register as what it is: more headroom. */
+const fldRep10On  = fld({ ...rep10, reliefOn: true });
+const fldRep10Off = fld({ ...rep10, reliefOn: false });
+inv("10\" re-pipe over an 8\" fall: relief HELPS under a CLEAR outlet",
+  fldRep10On === null || fldRep10On > fldRep10Off + 3,
+  `with ${fldRep10On === null ? ">420 (never floods in range)" : fldRep10On.toFixed(0)} > without ${fldRep10Off.toFixed(0)} mm/h`);
+inv("blocked outlet, no relief ⇒ floods far below the clear-outlet threshold",
+  fld({ ...clr8, ytBlocked: true, reliefOn: false }) < fld({ ...clr8, reliefOn: false }) - 20);
+inv("blocked ordering: no-relief < relief < clear",
+  fld({ ...clr8, ytBlocked: true, reliefOn: false })
+    < fld({ ...clr8, ytBlocked: true, reliefOn: true })
+    && fld({ ...clr8, ytBlocked: true, reliefOn: true }) < fld({ ...clr8, reliefOn: false }));
+inv("a shorter relief run carries more (higher threshold under a blocked outlet)",
+  fld({ ...clr8, ytBlocked: true, reliefOn: true, Lrel: 1 })
+    > fld({ ...clr8, ytBlocked: true, reliefOn: true, Lrel: 20 }));
+inv("as-built clear outlet does not back up; a blocked overloaded outlet does",
+  !M.solveCollector({ ...clr8, i: 300 }).outletBackup
+    && M.solveCollector({ ...clr8, ytBlocked: true, reliefOn: false, i: 300 }).outletBackup);
+inv("free-outlet floor preserved (as-built seed unchanged at a routine storm)",
+  Math.abs(M.solveCollector({ ...clr8, i: 120 }).prof[0].hgl
+    - M.solveCollector({ ...clr8, i: 120, reliefOn: false }).prof[0].hgl) < 1e-9);
+
 console.log("\n" + (fails ? `${fails} FAILURE(S)` : "ALL CHECKS PASS"));
 process.exit(fails ? 1 : 0);
