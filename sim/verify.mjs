@@ -157,5 +157,13 @@ inv("a routine storm leaves the as-built relief dry",
 inv("head-only ytActive is untouched (still the conservative reference)",
   M.solveCollector({ ...base, i: 600 }).ytActive === false);
 
+console.log("\nABSOLUTE — pre-existing outlet corrections");
+ok('fallCap uses the FALL diameter (10" collector, 8" fall)',
+  M.solveCollector({ ...base, d: 10, ytFall: 8 }).fallCap * 1000, 76.18, 0.1);
+ok('a blocked outlet zeroes the fall cap',
+  M.solveCollector({ ...base, ytBlocked: true }).fallCap, 0, 1e-9);
+ok('qDeliverMax gradient no longer double-counts slope (base)',
+  M.solveCollector(base).qDeliverMax * 1000, 58.2, 1.0);
+
 console.log("\n" + (fails ? `${fails} FAILURE(S)` : "ALL CHECKS PASS"));
 process.exit(fails ? 1 : 0);

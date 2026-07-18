@@ -637,8 +637,12 @@ function solveCollector(p){
    * up if the collector pushes more into it than it swallows. The collector's ceiling is
    * itself bounded: once surcharged to the gutter lip, water leaves via the boca tubos
    * rather than piling higher, so the driving gradient stops climbing. */
-  const fallCap = leader(p.d)/1000;
-  const qDeliverMax = pipeCapacity(D, S + (p.hf + p.gdep + S*L)/L, p.n, hs);
+  const dFall = p.ytFall || p.d;                        // the fall may differ from the collector
+  const fallCap = (p.ytBlocked ? 0 : leader(dFall))/1000;
+  /* Delivery ceiling: driving head = far-end canaleta lip -> outlet crown, over L.
+   * grad = S + (hf+gdep)/L. The old form S + (hf+gdep+S*L)/L expanded to 2S+(hf+gdep)/L,
+   * double-counting the invert slope. */
+  const qDeliverMax = pipeCapacity(D, S + (p.hf + p.gdep)/L, p.n, hs);
 
   const relief = reliefSplit(Math.min(Qtot, qDeliverMax), {
     dPipe: p.d, dFall: p.ytFall || p.d,
