@@ -404,6 +404,25 @@
             <option value="6" selected>6 in</option><option value="8">8 in</option></select>
         </div>
       </fieldset>
+
+      <fieldset>
+        <legend>Outlet — fall &amp; relief</legend>
+        <div class="ctl">
+          <label for="reliefOn"><span>Emergency relief <span class="tag t-known">as-built</span></span>
+            <select id="reliefOn"><option value="1" selected>modeled — count it in outlet capacity</option>
+              <option value="0">ignored — see the line without it</option></select></label>
+          <p class="hint">Toggle it to compare. Under a clear as-built outlet the fall alone suffices, so
+            this changes nothing. Under a blocked outlet — or a 10″ re-pipe over the 8″ fall — it is what
+            holds the backup down. Outlet clear/blocked is on the Relief tab (③).</p>
+        </div>
+        <div class="ctl">
+          <label for="Lrel"><span>Relief run length <span class="tag t-assume">assumed</span></span>
+            <span class="val" id="Lrel_v">3.0 m</span></label>
+          <input type="range" id="Lrel" min="1" max="20" step="0.5" value="3">
+          <p class="hint">The horizontal run from the Y-T to where it daylights. A shorter run has less
+            pipe friction, so the relief carries more for the same head.</p>
+        </div>
+      </fieldset>
     </div>
 
     <div class="note">
@@ -778,7 +797,7 @@ function chart(svg, opt){
 /* ---------------- read state ---------------- */
 const qIds = ["peaks","wmod","blen","valley","pitch","nroof","i10","idfb","idfc","tother"];
 const sIds = ["i","area","d","s","L","n","gs","gwid","gdep","gtype","hf","nb","db","useTc",
-              "hanger","cls","aged","silt","ytAngle","ytHead","ytFall","ytBlocked"];
+              "hanger","cls","aged","silt","ytAngle","ytHead","ytFall","ytBlocked","reliefOn","Lrel"];
 const CANALETA = { single:[0.40,0.14], double:[0.50,0.17] };
 $("gtype").addEventListener("change", () => {
   const c = CANALETA[$("gtype").value];
@@ -813,7 +832,8 @@ const readS = () => ({i:+$("i").value, area:+$("area").value, d:+$("d").value, s
   hanger:+$("hanger").value, cls:$("cls").value, aged:$("aged").value === "1",
   silt:+$("silt").value,
   ytAngle:+$("ytAngle").value, ytHead:+$("ytHead").value, ytFall:+$("ytFall").value,
-  ytBlocked:$("ytBlocked").value === "1"});
+  ytBlocked:$("ytBlocked").value === "1",
+  reliefOn: $("reliefOn").value === "1", Lrel: +$("Lrel").value});
 
 /* ---------------- runoff tab ---------------- */
 function renderQ(){
@@ -1037,6 +1057,11 @@ function renderS(tcNow){
   const r = solveCollector(p);
   drawSection(r, p);
   const tSur = threshold(p, x => x.util > 1), tFld = threshold(p, x => x.spilling.length > 0);
+  $("Lrel_v").textContent = p.Lrel.toFixed(1) + " m";
+  const fldOther = threshold({ ...p, reliefOn: !p.reliefOn }, x => x.spilling.length > 0);
+  const fldWith = p.reliefOn ? tFld : fldOther;
+  const fldWithout = p.reliefOn ? fldOther : tFld;
+  const reliefHelps = fldWith !== null && fldWithout !== null && fldWith - fldWithout > 2;
   const fmt = v => v === null ? "—" : v.toFixed(0);
   const lost = (1 - r.Qcap/r.QcapIdeal)*100;
   setStrip($("strip"), [
@@ -1062,6 +1087,12 @@ function renderS(tcNow){
     ["Spilling now", r.spilling.length+" of "+p.nb,
       r.firstSpill===null?"none":`first at ${r.firstSpill.toFixed(0)} m from outlet`,
       r.spilling.length?"bad":"ok"]
+    ,["Outlet capacity", (r.fallCap*1000).toFixed(0)+(r.reliefOn?"+relief":""),
+      `fall passes ${(r.fallCap*1000).toFixed(0)} L/s · arriving ${(r.qArr*1000).toFixed(0)} L/s`,
+      r.outletBackup?"bad":"ok"],
+    ["Floods w/ vs w/o relief", (fldWith===null?"—":fldWith.toFixed(0))+" / "+(fldWithout===null?"—":fldWithout.toFixed(0)),
+      reliefHelps ? "mm/h — relief raises the flood point here" : "mm/h — same (fall not the bottleneck)",
+      reliefHelps ? "ok" : ""]
   ]);
 
   /* Cross-check: the model predicts the outlet-end clearance from (far-end hf +
