@@ -600,6 +600,40 @@ function threshold(p, test){
   return hi;
 }
 
+/* ---- Y-T RELIEF SPLIT ----------------------------------------------------
+ * Dividing junction at the outlet: the straight-through RUN is the OPEN relief,
+ * the BRANCH turns down the fall. Head-only logic (see `ytActive`) says the relief
+ * stays dry; this adds the momentum pass-through that a head balance omits.
+ *
+ * Regime gate: below surcharge onset (qIn < qFull) the junction runs as an open
+ * channel and gravity drains everything down the branch -> phi = 0. Once
+ * pressurised, a control-volume energy split with a momentum-derived turning loss
+ * gives the straight fraction (cross-checked by a ballistic-transit argument):
+ *     phi = ((1+Kb) - sqrt(1 + Kb + Kb/N)) / Kb ,   N = V^2 / (2 g h)
+ * Kb(theta) = 1 - cos(theta): 1.0 at a 90 deg tee, 0.29 at a 45 deg wye. Idelchik
+ * Ch.7 / Crane TP-410 bracket Kb(90) in ~0.7-1.7 -> the sensitivity band. The fall
+ * swallows at most its leader rating; the capped remainder ALSO spills straight,
+ * unifying the momentum and head-overflow mechanisms in one min(). */
+const GRAV = 9.81;
+function reliefSplit(qIn, p){
+  const A = Math.PI/4 * Math.pow(p.dPipe*IN, 2);        // full-bore collector area
+  const vIn = qIn > 0 ? qIn/A : 0;                      // combined velocity (the K reference)
+  const Kb = 1 - Math.cos(p.angleDeg*Math.PI/180);      // turning loss into the branch
+  const N = (vIn > 0 && p.h > 0) ? (vIn*vIn)/(2*GRAV*p.h) : 0;
+  let phi = 0;
+  if (qIn >= p.qFull && N > 0 && Kb > 1e-9)
+    phi = Math.max(0, ((1+Kb) - Math.sqrt(1 + Kb + Kb/N)) / Kb);
+  const cap = p.blocked ? 0 : leader(p.dFall)/1000;     // annular-film leader cap (m3/s)
+  const qFall = Math.min((1-phi)*qIn, cap);
+  const qStraight = qIn - qFall;
+  const reliefFrac = qIn > 0 ? qStraight/qIn : 0;
+  const capBinds = (1-phi)*qIn > cap + 1e-12;           // fall pinned at its rating -> overflow
+  let mechanism = "dry";
+  if (qStraight > 1e-9) mechanism = (phi > 1e-6 && capBinds) ? "both"
+                                  : capBinds ? "head" : "momentum";
+  return {qIn, qStraight, qFall, reliefFrac, mechanism, vIn, N, phi, Kb, cap};
+}
+
 /* ---------------- svg helpers ---------------- */
 const NS = "http://www.w3.org/2000/svg";
 const $ = id => document.getElementById(id);

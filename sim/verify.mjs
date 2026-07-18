@@ -19,7 +19,7 @@ const js = html.split("<script>")[1].split("</script>")[0];
 const core = js.slice(js.indexOf("const IN = 0.0254"), js.indexOf("/* ---------------- svg helpers"));
 const tmp = join(here, ".core.tmp.mjs");
 writeFileSync(tmp, core +
-  "\nexport {solveCollector, threshold, leader, idf, timeOfConcentration, rationalQ, sagOf, section};\n");
+  "\nexport {solveCollector, threshold, leader, idf, timeOfConcentration, rationalQ, sagOf, section, reliefSplit};\n");
 const M = await import("file://" + tmp);
 unlinkSync(tmp);
 
@@ -116,6 +116,30 @@ inv("so the Y-T stays dry at as-built", !r.ytActive);
 inv("a choked fall WOULD wake it", M.solveCollector({ ...base, d: 8, i: 400 }).ytActive === false
   || M.solveCollector({ ...base, i: 400 }).ytActive,
   "sanity: ytActive is reachable in principle");
+
+console.log("\nABSOLUTE — momentum-aware Y-T relief split (closed form vs hand calc)");
+const gj = { dPipe: 8, dFall: 8, angleDeg: 90, h: 0.3, blocked: false, qFull: 0.040 };
+ok("90 deg relief frac @70 L/s", M.reliefSplit(0.070, gj).reliefFrac, 0.194, 0.02);
+ok("45 deg relief frac @70 L/s", M.reliefSplit(0.070, { ...gj, angleDeg: 45 }).reliefFrac, 0.011, 0.01);
+
+console.log("\nINVARIANT — the relief split obeys the physics");
+inv("90 deg tee sends MORE straight than a 45 wye",
+  M.reliefSplit(0.070, gj).reliefFrac > M.reliefSplit(0.070, { ...gj, angleDeg: 45 }).reliefFrac,
+  `90:${M.reliefSplit(0.070,gj).reliefFrac.toFixed(3)} vs 45:${M.reliefSplit(0.070,{...gj,angleDeg:45}).reliefFrac.toFixed(3)}`);
+inv("a blocked outlet forces the WHOLE flow straight",
+  Math.abs(M.reliefSplit(0.070, { ...gj, blocked: true }).reliefFrac - 1) < 1e-9);
+inv("below surcharge onset the relief is DRY (open-channel, gravity wins)",
+  M.reliefSplit(0.030, gj).reliefFrac === 0 && M.reliefSplit(0.030, gj).mechanism === "dry");
+inv("a deep branch head starves the momentum relief (N below threshold)",
+  M.reliefSplit(0.070, { ...gj, h: 5.0 }).reliefFrac < 0.01,
+  "raising h drops N below 1/(1+Kb) so phi -> 0");
+inv("mass is conserved at the junction",
+  Math.abs(M.reliefSplit(0.070, gj).qStraight + M.reliefSplit(0.070, gj).qFall - 0.070) < 1e-12);
+inv("relief fraction is bounded [0,1]",
+  (r => r.reliefFrac >= 0 && r.reliefFrac <= 1)(M.reliefSplit(0.070, gj)));
+inv("momentum grows with velocity head (V^2)",
+  M.reliefSplit(0.090, gj).reliefFrac > M.reliefSplit(0.070, gj).reliefFrac,
+  "more flow -> higher V -> larger straight fraction");
 
 console.log("\n" + (fails ? `${fails} FAILURE(S)` : "ALL CHECKS PASS"));
 process.exit(fails ? 1 : 0);
