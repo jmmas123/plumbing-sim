@@ -1,46 +1,23 @@
 # Next-session init prompt — paste into the fresh window
 
-We are analyzing the **Y-T emergency relief pipe** on the Bodega Triple stormwater system.
-Before anything else, read, in order:
-1. `docs/STATE.md` — where the project stands and the measured system.
-2. `docs/YT-OVERFLOW-ANALYSIS-BRIEF.md` — the full task, physics framework, methods, and the
-   critical caveats. THIS is your spec.
-3. `sim/index.html` — the existing steady-state model (self-contained). Its solver already
-   encodes a conservative, head-only version of the Y-T ("stays dry"); your job is the
-   momentum correction to that.
-4. Skim `refs/SWMM_API_REFERENCE.md` only if you get to the SWMM-feeding step.
+We're implementing the **OUTLET–RELIEF COUPLING** for the Bodega Triple stormwater sim.
 
-## What just shipped (this session)
-- A fully-measured, validated single-collector steady sim (`sim/index.html` + `sim/verify.mjs`,
-  21 checks green). Every parameter is from CAD or field measurement; geometry cross-checks
-  to 5 cm. Published at https://claude.ai/code/artifact/bffe0f46-2342-40d6-a44c-dfef82d8f9f9.
-- Diagnosis: the system floods at ~2.6× the 2-year storm ⇒ competently built, not chronically
-  undersized. Most likely real-world culprit for "failed this year": silt/blockage (inspect).
+Read first, in order:
+1. `docs/STATE.md` — where the project stands.
+2. `docs/superpowers/plans/2026-07-18-outlet-relief-coupling.md` — **THE PLAN you execute** (4 TDD tasks).
+3. `docs/superpowers/specs/2026-07-18-outlet-relief-coupling-design.md` — the physics behind it (esp. §3 model, §6 the two corrections, §3.6 limitations).
+4. `CLAUDE.md` — project rules.
 
-## Your task
-Compute what fraction of `Q_in` exits STRAIGHT out the open back end of the Y-T vs. turning 90°
-down the fall, across both regimes: (1) blocked/over-capacity outlet [head-driven], and (2)
-full-capacity momentum pass-through [momentum-driven, ∝ V²]. Deliver a `Q_straight/Q_in` curve
-vs. intensity, sensitivity to fitting geometry (90° tee vs 45° wye — the biggest lever), and
-fold a physically-based relief-junction split into the sim as a new element/tab.
+**What just shipped:** the Y-T relief momentum-split tab ③ (merged to main `7822919`, pushed, republished). This feature couples that relief + the fall into the **Section tab ②** as a real outlet bottleneck: when arriving flow exceeds fall + relief capacity, the outlet backs up and lifts the whole HGL; toggle the relief to watch it hold the backup down.
 
-## Recommended first move
-Invoke `superpowers:brainstorming` (or `claude-mem:make-plan`) to scope the analysis BEFORE
-coding — per the user's workflow rules, creative/build work starts with a plan skill. Then
-build incrementally and keep `node sim/verify.mjs` green.
+**Execute the plan subagent-driven** (`superpowers:subagent-driven-development`): fresh implementer per task, per-task spec+quality review gate, opus final whole-branch review. This is **physics-critical** — after Task 2 (the outlet head balance) re-run an **adversarial physics check on the IMPLEMENTED boundary** before merge. Do **NOT** weaken the C1 guard test (`"10\" re-pipe … relief HELPS under a clear outlet"`); a failure there means the coupling is wrong, not the test.
 
-## Load-bearing conventions (do NOT rediscover)
-- `sim/index.html` is self-contained deliberately (ES modules fail over file://); keep the
-  `<meta charset="utf-8">` first line.
-- After ANY edit to the sim, run `node sim/verify.mjs` — it tests the SHIPPED solver, not a copy.
-- Republish the SAME artifact: pass `url:` = the URL above (a new conversation otherwise mints
-  a new URL). Same `file_path` from THIS conversation would redeploy; from a fresh one use `url`.
-- Downspouts/vertical leaders = orifice/IPC rating, never Manning (6–8× error). Read `Flooding
-  Loss`, not `Total Flood Volume`, if/when SWMM is involved.
-- Preserve the in-UI honesty tags (`from CAD` / `measured` / `assumed`).
-- The Y-T is DOWNSTREAM of the collector, so it cannot relieve the far-end (rows 6–8) flooding;
-  it helps only for a blocked outlet or as an air vent. Do not let the analysis over-claim this.
+**Load-bearing conventions:**
+- **Branch before implementing** (e.g. `feat/outlet-relief-coupling`). After ANY edit to `sim/index.html` run `node sim/verify.mjs` and keep it green — it extracts the solver from the shipped HTML, so keep all `solveCollector` code before the `/* ---------------- svg helpers */` marker, and keep `<meta charset="utf-8">` the first line.
+- Vertical leaders = IPC orifice rating, **never Manning** — but the **relief is horizontal**, so pipe losses (entrance + friction + exit) DO apply to it.
+- Provenance tags are `class="tag t-known"` (measured/CAD) / `class="tag t-assume"` (assumed) — there is no `measured`/`assumed` modifier class.
+- **Honesty (must survive in the UI copy):** the relief cannot help far-end flooding caused **upstream** (the as-built observed flood), but **can** when the far-end flood is caused by **outlet backup** (blocked outlet, or the 10″ re-pipe). The 10″-re-pipe benefit must **not** be suppressed — it connects the user's two remediations.
+- **Task 1 bundles two pre-existing bug fixes** (fall cap by fall diameter; delivery-gradient de-double-count) that shift some published numbers — the user approved this. Watch that the tab-③ "violent storm wakes the relief" test doesn't flip on the lower `qDeliverMax`; raise its intensity if needed (noted in the plan).
 
-## Git
-- Repo initialized this session; committed locally. NO REMOTE yet — ask the user for one (or
-  `gh repo create`) before attempting to push. Branch: main.
+**Finish:** merge to main, push, and republish `sim/index.html` to the SAME artifact URL
+`https://claude.ai/code/artifact/bffe0f46-2342-40d6-a44c-dfef82d8f9f9` (favicon `🌧️`) via the Artifact tool's `url=` param — a fresh conversation otherwise mints a new URL. Repo: `git@github.com:jmmas123/plumbing-sim.git`, main at `1224d96`.
