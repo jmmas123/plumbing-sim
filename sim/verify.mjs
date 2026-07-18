@@ -140,6 +140,9 @@ inv("relief fraction is bounded [0,1]",
 inv("momentum grows with velocity head (V^2)",
   M.reliefSplit(0.090, gj).reliefFrac > M.reliefSplit(0.070, gj).reliefFrac,
   "more flow -> higher V -> larger straight fraction");
+inv("zero opposing head gives the momentum asymptote, not zero",
+  Math.abs(M.reliefSplit(0.070, { ...gj, h: 0 }).phi - (2 - Math.SQRT2)) < 0.02,
+  "h->0 => N->inf => phi -> 2-sqrt2 for a 90 deg tee");
 
 console.log("\n" + (fails ? `${fails} FAILURE(S)` : "ALL CHECKS PASS"));
 process.exit(fails ? 1 : 0);

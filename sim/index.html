@@ -619,9 +619,11 @@ function reliefSplit(qIn, p){
   const A = Math.PI/4 * Math.pow(p.dPipe*IN, 2);        // full-bore collector area
   const vIn = qIn > 0 ? qIn/A : 0;                      // combined velocity (the K reference)
   const Kb = 1 - Math.cos(p.angleDeg*Math.PI/180);      // turning loss into the branch
-  const N = (vIn > 0 && p.h > 0) ? (vIn*vIn)/(2*GRAV*p.h) : 0;
+  // h<=0 means no opposing head: N->inf so phi -> its asymptote (Kb/N -> 0 in JS),
+  // NOT zero. vIn<=0 (no flow) keeps N=0 so phi resolves to 0.
+  const N = vIn <= 0 ? 0 : (p.h > 0 ? (vIn*vIn)/(2*GRAV*p.h) : Infinity);
   let phi = 0;
-  if (qIn >= p.qFull && N > 0 && Kb > 1e-9)
+  if (qIn >= p.qFull && Kb > 1e-9)
     phi = Math.max(0, ((1+Kb) - Math.sqrt(1 + Kb + Kb/N)) / Kb);
   const cap = p.blocked ? 0 : leader(p.dFall)/1000;     // annular-film leader cap (m3/s)
   const qFall = Math.min((1-phi)*qIn, cap);
