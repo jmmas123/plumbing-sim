@@ -398,15 +398,15 @@ git commit -m "feat: relief intensity curve (chart) + live junction diagram"
         junction runs part-full and gravity takes everything down the fall (relief dry). Once
         pressurised, momentum overshoots the 90° down-turn: <code>φ = ((1+Kb) − √(1+Kb+Kb/N))/Kb</code>,
         <code>N = V²/2gh</code>, <code>Kb = 1 − cos θ</code>
-        <span class="tag">from literature</span> (Idelchik Ch. 7 / Crane TP-410; cross-checked by a
-        momentum control volume). The fall is leader-capped; the remainder spills straight.</p>
+        <span class="tag t-assume">from literature</span> (Idelchik Ch. 7 / Crane TP-410; cross-checked
+        by a momentum control volume). The fall is leader-capped; the remainder spills straight.</p>
       <p><strong>Limits.</strong> Steady flow. The branch head <code>h</code> is assumed, not
         measured — it moves the fraction by ±0.1 and sets the wake-up intensity. The 90° branch loss
         itself is uncertain ~2× (Idelchik ~1.0 vs Crane ~1.7); this tool uses the Borda form 1.0.</p>
     </div>
 ```
 
-(If the `tag` class needs a modifier for the `from literature` label and none exists, reuse the plain `tag` class — the existing `assumed`/`measured` modifiers are optional styling only.)
+(Provenance tags in this file are `class="tag t-known"` for measured/CAD facts and `class="tag t-assume"` for assumptions/external values — there is no `measured`/`assumed` modifier. Literature-sourced coefficients use `t-assume`.)
 
 - [ ] **Step 2: Run the full harness one last time**
 
