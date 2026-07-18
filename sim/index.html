@@ -1080,7 +1080,7 @@ function renderRelief(){
     ["regime", RELIEF_MECH[r.reliefMech]||r.reliefMech, `at i = ${s.i} mm/h`]
   ]);
 
-  const sweep = angle => { const pts=[]; for (let i=5;i<=600;i+=5)
+  const sweep = angle => { const pts=[]; for (let i=5;i<=600;i+=15)
     pts.push([i, solveCollector({ ...s, i, ytAngle: angle }).reliefFrac]); return pts; };
   chart($("relief-curve"), {
     xmin:0, xmax:600, ymin:0, ymax:1,
@@ -1095,7 +1095,7 @@ function renderRelief(){
   reliefDiagram($("relief-diagram"), r);
 }
 
-const update = () => { renderS(renderQ()); renderRelief(); };
+const update = () => { renderS(renderQ()); if (!$("panel-r").hidden) renderRelief(); };
 qIds.concat(sIds).forEach(id => $(id).addEventListener("input", update));
 
 const PRESETS = {
