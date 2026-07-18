@@ -134,6 +134,7 @@
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-q" aria-controls="panel-q" aria-selected="false">① Runoff — where Q comes from</button>
     <button role="tab" id="tab-s" aria-controls="panel-s" aria-selected="true">② Section — where it floods</button>
+    <button role="tab" id="tab-r" aria-controls="panel-r" aria-selected="false">③ Relief — the Y-T split</button>
   </div>
 
   <!-- ================= RUNOFF ================= -->
@@ -422,6 +423,53 @@
         you can put your hands on, and the check SWMM has to agree with.</p>
     </div>
   </div>
+
+  <!-- ================= RELIEF ================= -->
+  <div role="tabpanel" id="panel-r" aria-labelledby="tab-r" hidden>
+    <p class="sub">Of the flow that reaches the outlet, how much shoots straight out the open back
+      (the relief) versus turning 90° down the fall. The head-only model on tab ② says the relief
+      stays dry — this is the momentum correction it cannot see.</p>
+
+    <div class="strip" id="relief-stats"></div>
+
+    <div class="grid2">
+      <div class="sheet">
+        <svg id="relief-curve" viewBox="0 0 520 300" role="img"
+             aria-label="Straight-out fraction versus storm intensity"></svg>
+        <div class="cap"><span>Straight-out fraction vs storm intensity</span></div>
+      </div>
+      <div class="sheet">
+        <svg id="relief-diagram" viewBox="0 0 520 200" role="img"
+             aria-label="Junction split schematic at current settings"></svg>
+        <div class="cap"><span>The split at your current settings</span></div>
+      </div>
+    </div>
+
+    <div class="panels">
+      <fieldset>
+        <legend>Y-T junction <span class="tag measured">measured</span></legend>
+        <label for="ytAngle"><span>Down-turn fitting</span>
+          <select id="ytAngle"><option value="90">90° tee (as-built)</option>
+            <option value="45">45° wye</option></select></label>
+        <label for="ytFall"><span>Fall diameter</span>
+          <select id="ytFall"><option value="8">8″ (as-built)</option>
+            <option value="10">10″ (planned)</option></select></label>
+        <label for="ytBlocked"><span>Outlet</span>
+          <select id="ytBlocked"><option value="0">clear</option>
+            <option value="1">blocked (emergency)</option></select></label>
+        <label for="ytHead"><span>Branch head h <span class="tag assumed">assumed</span></span>
+          <input type="range" id="ytHead" min="0.1" max="1.0" step="0.05" value="0.3">
+          <output id="ytHeadOut">0.30 m</output></label>
+        <p class="hint">h is the branch's effective gravity head — the dominant uncertainty in the
+          split (±0.1 on the fraction). It sets the storm intensity at which the relief wakes.</p>
+      </fieldset>
+      <div class="note" style="margin:0">
+        <p><strong>The relief sits DOWNSTREAM of the whole collector.</strong> It can only help a
+          blocked or drowned outlet, or vent trapped air. It <em>cannot</em> relieve the far-end
+          boca-tubo flooding you observed — that water never reaches the Y-T.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -696,7 +744,7 @@ function chart(svg, opt){
 /* ---------------- read state ---------------- */
 const qIds = ["peaks","wmod","blen","valley","pitch","nroof","i10","idfb","idfc","tother"];
 const sIds = ["i","area","d","s","L","n","gs","gwid","gdep","gtype","hf","nb","db","useTc",
-              "hanger","cls","aged","silt"];
+              "hanger","cls","aged","silt","ytAngle","ytHead","ytFall","ytBlocked"];
 const CANALETA = { single:[0.40,0.14], double:[0.50,0.17] };
 $("gtype").addEventListener("change", () => {
   const c = CANALETA[$("gtype").value];
@@ -729,7 +777,9 @@ const readS = () => ({i:+$("i").value, area:+$("area").value, d:+$("d").value, s
   L:+$("L").value, n:+$("n").value, gs:+$("gs").value, gwid:+$("gwid").value,
   gdep:+$("gdep").value, hf:+$("hf").value, nb:+$("nb").value, db:+$("db").value,
   hanger:+$("hanger").value, cls:$("cls").value, aged:$("aged").value === "1",
-  silt:+$("silt").value});
+  silt:+$("silt").value,
+  ytAngle:+$("ytAngle").value, ytHead:+$("ytHead").value, ytFall:+$("ytFall").value,
+  ytBlocked:$("ytBlocked").value === "1"});
 
 /* ---------------- runoff tab ---------------- */
 function renderQ(){
@@ -996,7 +1046,22 @@ function renderS(tcNow){
     : r.util>1 ? "Surcharged — full, not yet spilling" : "Within capacity";
 }
 
-const update = () => renderS(renderQ());
+/* ---------------- relief tab ---------------- */
+const RELIEF_MECH = {dry:"all down the fall", momentum:"momentum pass-through",
+  head:"head overflow (fall capped)", both:"overflow + momentum"};
+function renderRelief(){
+  $("ytHeadOut").textContent = (+$("ytHead").value).toFixed(2) + " m";
+  const s = readS(), r = solveCollector(s);
+  const qJ = Math.min(r.Qtot, r.qDeliverMax)*1000;
+  setStrip($("relief-stats"), [
+    ["straight out the back", (r.reliefFrac*100).toFixed(0)+"%",
+      `${(r.qStraight*1000).toFixed(1)} of ${qJ.toFixed(1)} L/s`, r.reliefFrac>1e-6?"bad":""],
+    ["down the fall", ((1-r.reliefFrac)*100).toFixed(0)+"%", `${(r.qFall*1000).toFixed(1)} L/s`],
+    ["regime", RELIEF_MECH[r.reliefMech]||r.reliefMech, `at i = ${s.i} mm/h`]
+  ]);
+}
+
+const update = () => { renderS(renderQ()); renderRelief(); };
 qIds.concat(sIds).forEach(id => $(id).addEventListener("input", update));
 
 const PRESETS = {
@@ -1012,7 +1077,7 @@ document.querySelectorAll("button.preset").forEach(b => b.addEventListener("clic
 }));
 
 /* tabs */
-const tabs = [["tab-q","panel-q"],["tab-s","panel-s"]];
+const tabs = [["tab-q","panel-q"],["tab-s","panel-s"],["tab-r","panel-r"]];
 tabs.forEach(([t,pn]) => $(t).addEventListener("click", () => {
   tabs.forEach(([t2,p2]) => {
     const on = t2 === t;
