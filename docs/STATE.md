@@ -8,9 +8,9 @@ _Updated 2026-07-18._
 - SHIPPED: Y-T momentum-split tab ③ (`7822919`) + outlet–relief coupling tab ② (merged main
   `4bc93b8`, pushed, republished). Tab ② makes the outlet a real bottleneck: overloaded → backs
   up → lifts the HGL, with a relief on/off toggle. Fixed two latent bugs: `fallCap` uses the FALL
-  Ø (not collector Ø); `qDeliverMax` gradient no longer double-counts slope. A 10″ re-pipe over the
-  8″ fall makes the relief effective under a clear outlet (floods ~490 mm/h w/ relief vs 208 w/o;
-  flood-search ceiling raised 420→600 to observe that crossing; the w/ vs w/o readout is null-safe).
+  Ø (not collector Ø); `qDeliverMax` gradient no longer double-counts slope.
+- SHIPPED: relief now has its own diameter (`dRelief`, default 8″ as-built), independent of
+  the collector — a 10″ re-pipe keeps the honest 8″ relief; dial up via tab-②'s "Relief diameter".
 
 ## System, as measured on site
 - Roof 8,343 m² (123.6 × 67.5 m, 3 gables), plan area (pitch does NOT change Q).
@@ -28,7 +28,7 @@ _Updated 2026-07-18._
 ## Open leads
 1. INSPECT pipe interiors for silt/blockage — cheapest "worked for years then failed" explanation.
 2. SWMM build for timing/storage (design storms per return period). Refs in `refs/`.
-3. Optional tab-② refinements: expose relief Ø as its own input (today = collector Ø, overstates ~1.56× if a 10″ re-pipe keeps an 8″ relief); bend loss in Krel.
+3. Optional tab-② refinement: bend loss in Krel (M3).
 
 ## Conventions
 - Self-contained `sim/index.html`; `<meta charset="utf-8">` FIRST line; `node sim/verify.mjs` green
