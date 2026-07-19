@@ -422,6 +422,18 @@
           <p class="hint">The horizontal run from the Y-T to where it daylights. A shorter run has less
             pipe friction, so the relief carries more for the same head.</p>
         </div>
+        <div class="ctl">
+          <label for="dRelief"><span>Relief diameter <span class="tag t-known">as-built</span></span></label>
+          <select id="dRelief">
+            <option value="6">6″</option>
+            <option value="8" selected>8″ (as-built run)</option>
+            <option value="10">10″</option>
+            <option value="12">12″</option>
+          </select>
+          <p class="hint">The straight-through relief run is your existing 8″ pipe. Re-piping the collector
+            (its diameter is on this tab) does NOT change it — leave it at 8″ unless the re-pipe would
+            replace this run too. Upsizing it here shows how much more the relief could carry.</p>
+        </div>
       </fieldset>
     </div>
 
@@ -446,6 +458,9 @@
         backs up and lifts this whole water line. For the as-built the fall out-capacities the
         collector, so the relief is redundant — but a <strong>10″ re-pipe over the 8″ fall</strong>
         makes the fall the limiter, and then the relief earns its keep with a clear outlet.</p>
+      <p>The <strong>relief diameter</strong> is set separately (Outlet fieldset): a collector re-pipe
+        does not upsize the existing 8″ relief run unless you replace it too, so a 10″ collector with the
+        as-built 8″ relief helps less than a fully-10″ relief would — dial the relief Ø up to compare.</p>
       <p><strong>What the relief can and cannot do.</strong> It cannot help far-end flooding caused
         <em>upstream</em> (the flood you actually saw, outlet free — that water never reaches the Y-T).
         It <em>can</em> lower the far end when the flood is caused by <em>outlet backup</em> (a blocked
@@ -810,7 +825,7 @@ function chart(svg, opt){
 /* ---------------- read state ---------------- */
 const qIds = ["peaks","wmod","blen","valley","pitch","nroof","i10","idfb","idfc","tother"];
 const sIds = ["i","area","d","s","L","n","gs","gwid","gdep","gtype","hf","nb","db","useTc",
-              "hanger","cls","aged","silt","ytAngle","ytHead","ytFall","ytBlocked","reliefOn","Lrel"];
+              "hanger","cls","aged","silt","ytAngle","ytHead","ytFall","ytBlocked","reliefOn","Lrel","dRelief"];
 const CANALETA = { single:[0.40,0.14], double:[0.50,0.17] };
 $("gtype").addEventListener("change", () => {
   const c = CANALETA[$("gtype").value];
@@ -846,7 +861,7 @@ const readS = () => ({i:+$("i").value, area:+$("area").value, d:+$("d").value, s
   silt:+$("silt").value,
   ytAngle:+$("ytAngle").value, ytHead:+$("ytHead").value, ytFall:+$("ytFall").value,
   ytBlocked:$("ytBlocked").value === "1",
-  reliefOn: $("reliefOn").value === "1", Lrel: +$("Lrel").value});
+  reliefOn: $("reliefOn").value === "1", Lrel: +$("Lrel").value, dRelief: +$("dRelief").value});
 
 /* ---------------- runoff tab ---------------- */
 function renderQ(){
