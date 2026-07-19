@@ -207,11 +207,15 @@ inv("as-built relief Ø defaults to 8\"", M.solveCollector(base).dRelief === 8,
 inv("a 10\" collector re-pipe does NOT upsize the relief (stays 8\" by default)",
   M.solveCollector({ ...base, d: 10, ytFall: 8 }).dRelief === 8,
   `dRelief=${M.solveCollector({ ...base, d: 10, ytFall: 8 }).dRelief}`);
-const fldRelO10 = fld({ ...rep10, dRelief: 10 });
-const fldRelO8  = fld({ ...rep10, dRelief: 8 });
-inv("upsizing the relief (Ø 8→10) raises the flood point under a fall-limited outlet",
-  fldRelO10 !== null && fldRelO8 !== null && fldRelO10 > fldRelO8 + 3,
-  `Ø10 ${fldRelO10===null?"—":fldRelO10.toFixed(0)} > Ø8 ${fldRelO8===null?"—":fldRelO8.toFixed(0)} mm/h`);
+/* "Bigger relief ⇒ more capacity" is only FIRST-ORDER when the relief is the outlet's sole
+ * discharge path — a blocked outlet. With a CLEAR 10" outlet the 8" relief is barely loaded
+ * (~29 L/s vs a 76 L/s fall cap), so the flood is far-end-limited and relief Ø is only a ~7 mm/h
+ * second-order effect. Test the property where it is first-order (mirrors the Lrel blocked test). */
+const fldRelBlk10 = fld({ ...rep10, ytBlocked: true, dRelief: 10 });
+const fldRelBlk8  = fld({ ...rep10, ytBlocked: true, dRelief: 8 });
+inv("upsizing the relief (Ø 8→10) raises the flood point under a blocked outlet (relief is the sole path)",
+  fldRelBlk10 !== null && fldRelBlk8 !== null && fldRelBlk10 > fldRelBlk8 + 3,
+  `Ø10 ${fldRelBlk10===null?"—":fldRelBlk10.toFixed(0)} > Ø8 ${fldRelBlk8===null?"—":fldRelBlk8.toFixed(0)} mm/h`);
 const fldRel8On  = fld({ ...rep10, dRelief: 8, reliefOn: true });
 const fldRel8Off = fld({ ...rep10, dRelief: 8, reliefOn: false });
 inv("the honest 8\" relief still HELPS the 10\" re-pipe under a clear outlet",
