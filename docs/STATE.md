@@ -36,5 +36,5 @@ _Updated 2026-07-19._
 - Vertical leaders = IPC orifice rating, NEVER Manning; the RELIEF is horizontal ⇒ pipe losses apply.
 - Provenance tags `class="tag t-known"` / `class="tag t-assume"` (no `measured`/`assumed` modifier).
 - Honesty: relief can't help an UPSTREAM-caused far-end flood; CAN help a BACKUP-caused one.
-- Git: origin `github.com/jmmas123/plumbing-sim`, main at `3cfbfa3` (pushed). Branch before implementing;
+- Git: origin `github.com/jmmas123/plumbing-sim`, main at `9f43961` (pushed). Branch before implementing;
   merge/push + republish (Artifact `url=` the URL above, favicon 🌧️) at the end.
