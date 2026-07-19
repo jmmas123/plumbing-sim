@@ -1,5 +1,5 @@
 # STATE — Bodega Triple stormwater sim
-_Updated 2026-07-18._
+_Updated 2026-07-19._
 
 ## Current position
 - Steady-state sim of ONE aerial collector: 3 tabs (Runoff ①, Section ②, Relief ③).
@@ -11,6 +11,7 @@ _Updated 2026-07-18._
   Ø (not collector Ø); `qDeliverMax` gradient no longer double-counts slope.
 - SHIPPED: relief now has its own diameter (`dRelief`, default 8″ as-built), independent of
   the collector — a 10″ re-pipe keeps the honest 8″ relief; dial up via tab-②'s "Relief diameter".
+- VERIFIED N/A: M3 bend loss in `Krel` — relief run straight to daylight (no bends); `Krel` already complete (spec §6, tab-② note).
 
 ## System, as measured on site
 - Roof 8,343 m² (123.6 × 67.5 m, 3 gables), plan area (pitch does NOT change Q).
@@ -28,7 +29,6 @@ _Updated 2026-07-18._
 ## Open leads
 1. INSPECT pipe interiors for silt/blockage — cheapest "worked for years then failed" explanation.
 2. SWMM build for timing/storage (design storms per return period). Refs in `refs/`.
-3. Optional tab-② refinement: bend loss in Krel (M3).
 
 ## Conventions
 - Self-contained `sim/index.html`; `<meta charset="utf-8">` FIRST line; `node sim/verify.mjs` green

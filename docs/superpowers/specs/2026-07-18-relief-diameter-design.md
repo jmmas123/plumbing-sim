@@ -95,7 +95,12 @@ are distinct physical pipes:
 
 ## 6. Out of scope (tracked follow-ups)
 
-- **M3 — bend loss in `Krel`** (~10–15%): a separate, smaller refinement; user chose to keep it out.
+- **M3 — bend loss in `Krel`** — **RESOLVED 2026-07-19: not applicable.** The user confirmed the relief
+  run is straight from the Y-T to daylight on the rear platform (no bends between the tee and the
+  platform), so `Krel = 1 (exit) + 0.5 (entrance) + f·L/D (friction)` is already complete — there is no
+  bend term to add. The ~10–15% the adversarial review feared applies only to a *bent* run, which this is
+  not. If the relief is ever re-routed around a corner, add `+ Kb·nBends` to `Krel` (Kb ≈ 0.6 per standard
+  90° elbow) and a blocked-outlet monotonicity guard; until then it stays a straight-run pipe.
 - Drown-to-lip flood *extent* overstatement (L1), the cosmetic `Math.min` recomputes (#1/#2), raising
   the search ceiling further. None are touched here.
 - No change to the head-balance physics, the fall/leader model, or the momentum split.
