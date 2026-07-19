@@ -221,6 +221,16 @@ const fldRel8Off = fld({ ...rep10, dRelief: 8, reliefOn: false });
 inv("the honest 8\" relief still HELPS the 10\" re-pipe under a clear outlet",
   fldRel8On !== null && fldRel8Off !== null && fldRel8On > fldRel8Off + 3,
   `with ${fldRel8On===null?"—":fldRel8On.toFixed(0)} > without ${fldRel8Off===null?"—":fldRel8Off.toFixed(0)} mm/h`);
+/* Spec §5 explicit-override, clear outlet: upsizing the relief to 10" must beat the honest 8"
+ * default. Use a STRICT `>` (no tolerance buffer): the relationship is monotonic, so the only way
+ * this fails is if a bigger relief stops helping — a real regression, not tolerance drift. (The
+ * clear-outlet margin is only ~7 mm/h and saturating, which is exactly why the blocked-outlet
+ * monotonicity guard above carries the first-order signal; this one guards the override mechanism.) */
+const fldRelClr10 = fld({ ...rep10, dRelief: 10 });
+const fldRelClr8  = fld({ ...rep10, dRelief: 8 });
+inv("explicit relief upsize (Ø 8→10) still helps under a CLEAR 10\" outlet (override takes effect)",
+  fldRelClr10 !== null && fldRelClr8 !== null && fldRelClr10 > fldRelClr8,
+  `Ø10 ${fldRelClr10===null?"—":fldRelClr10.toFixed(0)} > Ø8 ${fldRelClr8===null?"—":fldRelClr8.toFixed(0)} mm/h`);
 
 console.log("\n" + (fails ? `${fails} FAILURE(S)` : "ALL CHECKS PASS"));
 process.exit(fails ? 1 : 0);
