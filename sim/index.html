@@ -655,7 +655,8 @@ function solveCollector(p){
   const Qarr  = Math.min(Qtot, qDeliverMax);
   const qOver = Math.max(0, Qarr - fallCap);
   const reliefOn = p.reliefOn !== false;                                 // default: modeled
-  const Arel = Math.PI/4 * Math.pow(p.d*IN, 2);                          // relief = collector's straight run
+  const dRelief = p.dRelief != null ? p.dRelief : 8;                    // as-built relief run (8"), NOT the collector
+  const Arel = Math.PI/4 * Math.pow(dRelief*IN, 2);                     // relief pipe area (its own diameter)
   const Lrel = p.Lrel != null ? p.Lrel : 3;                             // relief run length (m)
   const fDarcy = 8*GRAV*p.n*p.n / Math.pow(D/4, 1/3);                    // Darcy f from Manning n
   const Krel = 1 + 0.5 + fDarcy*Lrel/D;                                  // exit + entrance + friction
@@ -693,7 +694,7 @@ function solveCollector(p){
    * itself bounded: once surcharged to the gutter lip, water leaves via the boca tubos
    * rather than piling higher, so the driving gradient stops climbing. */
   const relief = reliefSplit(Qarr, {
-    dPipe: p.d, dFall: p.ytFall || p.d,
+    dPipe: dRelief, dFall: p.ytFall || p.d,
     angleDeg: (p.ytAngle != null ? p.ytAngle : 90),
     h: (p.ytHead != null ? p.ytHead : 0.3),
     blocked: !!p.ytBlocked, qFull: Qcap });
@@ -708,7 +709,7 @@ function solveCollector(p){
     gCap, gLoad, gUtil: gLoad/gCap,
     tuboLoad:qEach*1000, tuboRating:leader(p.db), tuboUtil:(qEach*1000)/leader(p.db),
     fallCap, qDeliverMax, ytActive: Math.min(Qtot, qDeliverMax) > fallCap,
-    qArr: Qarr, qOver, reliefOn, Hout, outletBackup,
+    qArr: Qarr, qOver, reliefOn, Hout, outletBackup, dRelief,
     reliefFrac: relief.reliefFrac, qStraight: relief.qStraight, qFall: relief.qFall,
     reliefMech: relief.mechanism,
     firstSpill: spilling.length ? Math.min(...spilling.map(t=>t.x)) : null};

@@ -201,5 +201,22 @@ inv("free-outlet floor preserved (as-built seed unchanged at a routine storm)",
   Math.abs(M.solveCollector({ ...clr8, i: 120 }).prof[0].hgl
     - M.solveCollector({ ...clr8, i: 120, reliefOn: false }).prof[0].hgl) < 1e-9);
 
+console.log("\nINVARIANT — relief diameter (independent of the collector)");
+inv("as-built relief Ø defaults to 8\"", M.solveCollector(base).dRelief === 8,
+  `dRelief=${M.solveCollector(base).dRelief}`);
+inv("a 10\" collector re-pipe does NOT upsize the relief (stays 8\" by default)",
+  M.solveCollector({ ...base, d: 10, ytFall: 8 }).dRelief === 8,
+  `dRelief=${M.solveCollector({ ...base, d: 10, ytFall: 8 }).dRelief}`);
+const fldRelO10 = fld({ ...rep10, dRelief: 10 });
+const fldRelO8  = fld({ ...rep10, dRelief: 8 });
+inv("upsizing the relief (Ø 8→10) raises the flood point under a fall-limited outlet",
+  fldRelO10 !== null && fldRelO8 !== null && fldRelO10 > fldRelO8 + 3,
+  `Ø10 ${fldRelO10===null?"—":fldRelO10.toFixed(0)} > Ø8 ${fldRelO8===null?"—":fldRelO8.toFixed(0)} mm/h`);
+const fldRel8On  = fld({ ...rep10, dRelief: 8, reliefOn: true });
+const fldRel8Off = fld({ ...rep10, dRelief: 8, reliefOn: false });
+inv("the honest 8\" relief still HELPS the 10\" re-pipe under a clear outlet",
+  fldRel8On !== null && fldRel8Off !== null && fldRel8On > fldRel8Off + 3,
+  `with ${fldRel8On===null?"—":fldRel8On.toFixed(0)} > without ${fldRel8Off===null?"—":fldRel8Off.toFixed(0)} mm/h`);
+
 console.log("\n" + (fails ? `${fails} FAILURE(S)` : "ALL CHECKS PASS"));
 process.exit(fails ? 1 : 0);
