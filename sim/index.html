@@ -444,6 +444,17 @@
         climbs up inside the boca tubos instead. Only past <em>Floods above</em> has it climbed the whole
         drop and come back out at the gutter. The distance between those numbers is your boca tubo drop
         height — a buffer you own and have never measured.</p>
+      <p><strong>Why the Relief tab (③) shows a percentage when this tab shows none.</strong> They answer
+        two different questions about the same tee. Tab ③ splits the arriving stream by <em>momentum</em>:
+        in a full, pressurised pipe some water carries straight on past the down-turn instead of making the
+        corner. This tab counts only the <em>surplus</em> — flow the fall physically cannot swallow. With a
+        clear as-built outlet the fall still has spare capacity, so the surplus is zero even while tab ③
+        routes a few percent straight out the back. Both are true; neither is a bug.</p>
+      <p><strong>And this tab ignores that diversion on purpose.</strong> The momentum split depends on the
+        branch head <code>h</code>, which is assumed, not measured — across its plausible range it moves the
+        diverted fraction from roughly 40% down to zero. A drainage verdict must not rest on a guessed
+        number. Leaving it out can only <em>understate</em> what the relief carries, never overstate it, so
+        every capacity figure on this tab stays on the safe side of the truth.</p>
       <p><strong>Method.</strong> Steady flow, one collector, <code>Q = C·i·A</code> with C = 0.95 on the
         PLAN area. The water surface is marched upstream from the free outlet on Manning's friction
         slope; where the pipe runs full it pressurises and the HGL climbs above the crown. The fall and
@@ -507,13 +518,21 @@
         <label for="ytHead"><span>Branch head h <span class="tag t-assume">assumed</span></span>
           <input type="range" id="ytHead" min="0.1" max="1.0" step="0.05" value="0.3">
           <output id="ytHeadOut">0.30 m</output></label>
-        <p class="hint">h is the branch's effective gravity head — the dominant uncertainty in the
-          split (±0.1 on the fraction). It sets the storm intensity at which the relief wakes.</p>
+        <p class="hint">h is the branch's effective gravity head — roughly the drop from the Y-T down to
+          where the relief daylights. It is the dominant uncertainty here: at the flows this collector
+          actually delivers, sliding h across its range moves the diverted fraction from about 40% to
+          zero. That is why the Section tab (②) leaves this diversion out of its capacity numbers rather
+          than banking on it. Measure this drop and the uncertainty collapses.</p>
       </fieldset>
       <div class="note" style="margin:0">
         <p><strong>The relief sits DOWNSTREAM of the whole collector.</strong> It can only help a
           blocked or drowned outlet, or vent trapped air. It <em>cannot</em> relieve the far-end
           boca-tubo flooding you observed — that water never reaches the Y-T.</p>
+        <p><strong>This percentage is a routing split, not spare capacity.</strong> It says how the stream
+          arriving at the tee divides between the fall and the straight-through run. The Section tab (②)
+          asks a different question — how much flow the fall <em>cannot</em> swallow — and with a clear
+          outlet that answer is zero, because the fall still has room. A figure here with a zero there is
+          the two questions disagreeing, not the model contradicting itself.</p>
       </div>
     </div>
 
@@ -1117,10 +1136,13 @@ function renderS(tcNow){
       r.firstSpill===null?"none":`first at ${r.firstSpill.toFixed(0)} m from outlet`,
       r.spilling.length?"bad":"ok"]
     ,["Outlet capacity", (r.fallCap*1000).toFixed(0)+(r.reliefOn?"+relief":""),
-      `fall passes ${(r.fallCap*1000).toFixed(0)} L/s · arriving ${(r.qArr*1000).toFixed(0)} L/s`,
+      `fall passes ${(r.fallCap*1000).toFixed(0)} L/s · arriving ${(r.qArr*1000).toFixed(0)} L/s`
+        + (r.qOver>0 ? ` · ${(r.qOver*1000).toFixed(1)} L/s over → relief`
+                     : ` · ${((r.fallCap-r.qArr)*1000).toFixed(0)} L/s spare → no surplus`),
       r.outletBackup?"bad":"ok"],
     ["Floods w/ vs w/o relief", (fldWith===null?"—":fldWith.toFixed(0))+" / "+(fldWithout===null?"—":fldWithout.toFixed(0)),
-      reliefHelps ? "mm/h — relief raises the flood point here" : "mm/h — same (fall not the bottleneck)",
+      reliefHelps ? "mm/h — relief raises the flood point here"
+                  : "mm/h — same here: the fall never fills, so there is no surplus to relieve",
       reliefHelps ? "ok" : ""]
   ]);
 
@@ -1168,9 +1190,9 @@ function renderRelief(){
   const s = readS(), r = solveCollector(s);
   const qJ = Math.min(r.Qtot, r.qDeliverMax)*1000;
   setStrip($("relief-stats"), [
-    ["straight out the back", (r.reliefFrac*100).toFixed(0)+"%",
-      `${(r.qStraight*1000).toFixed(1)} of ${qJ.toFixed(1)} L/s`, r.reliefFrac>1e-6?"bad":""],
-    ["down the fall", ((1-r.reliefFrac)*100).toFixed(0)+"%", `${(r.qFall*1000).toFixed(1)} L/s`],
+    ["routed straight out the back", (r.reliefFrac*100).toFixed(0)+"%",
+      `${(r.qStraight*1000).toFixed(1)} of ${qJ.toFixed(1)} L/s reaching the tee`, r.reliefFrac>1e-6?"bad":""],
+    ["routed down the fall", ((1-r.reliefFrac)*100).toFixed(0)+"%", `${(r.qFall*1000).toFixed(1)} L/s`],
     ["regime", RELIEF_MECH[r.reliefMech]||r.reliefMech, `at i = ${s.i} mm/h`]
   ]);
 
