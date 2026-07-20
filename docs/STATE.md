@@ -1,17 +1,19 @@
 # STATE — Bodega Triple stormwater sim
-_Updated 2026-07-19._
+_Updated 2026-07-20._
 
 ## Current position
 - Steady-state sim of ONE aerial collector: 3 tabs (Runoff ①, Section ②, Relief ③).
   `sim/index.html` (self-contained, file://) + `sim/verify.mjs`. Artifact:
   https://claude.ai/code/artifact/bffe0f46-2342-40d6-a44c-dfef82d8f9f9
-- SHIPPED: Y-T momentum-split tab ③ (`7822919`) + outlet–relief coupling tab ② (merged main
-  `4bc93b8`, pushed, republished). Tab ② makes the outlet a real bottleneck: overloaded → backs
-  up → lifts the HGL, with a relief on/off toggle. Fixed two latent bugs: `fallCap` uses the FALL
-  Ø (not collector Ø); `qDeliverMax` gradient no longer double-counts slope.
-- SHIPPED: relief now has its own diameter (`dRelief`, default 8″ as-built), independent of
-  the collector — a 10″ re-pipe keeps the honest 8″ relief; dial up via tab-②'s "Relief diameter".
-- VERIFIED N/A: M3 bend loss in `Krel` — relief run straight to daylight (no bends); `Krel` already complete (spec §6, tab-② note).
+- SHIPPED: Y-T momentum-split tab ③ (`7822919`); outlet–relief coupling tab ② (`4bc93b8`) — outlet is
+  a real bottleneck (overloaded → backs up → lifts HGL) + relief on/off; relief has its own diameter
+  `dRelief` (default 8″, independent of the collector, `3cfbfa3`).
+- VERIFIED N/A: M3 bend loss in `Krel` — relief run straight to daylight; `Krel` complete (spec §6).
+- SHIPPED (`3449d17`, labels only, solver verified bit-identical): tabs ② and ③ now state that they
+  answer different questions — ③ = momentum ROUTING split at the tee (~14% at 65 L/s, h=0.30),
+  ② = SURPLUS the fall can't swallow (0 under a clear outlet). ② excludes ③'s diversion because `h`
+  is assumed (moves the fraction ~40%→0); proved over 1,920 configs that `qOver ≤ qStraight` always,
+  so ② can only understate the relief. User: "do the labels, dont change the physics".
 
 ## System, as measured on site
 - Roof 8,343 m² (123.6 × 67.5 m, 3 gables), plan area (pitch does NOT change Q).
@@ -27,8 +29,10 @@ _Updated 2026-07-19._
 - Worst 24 h = 82.5 mm ≈ 2-yr day; no sub-daily gauge within 17 km.
 
 ## Open leads
-1. INSPECT pipe interiors for silt/blockage — cheapest "worked for years then failed" explanation.
-2. SWMM build for timing/storage (design storms per return period). Refs in `refs/`.
+1. MEASURE branch head `h` — the drop from the Y-T down to where the relief daylights. Only assumed
+   input left in the relief model; collapses the ~40%→0 spread in tab ③'s split.
+2. INSPECT pipe interiors for silt/blockage — cheapest "worked for years then failed" explanation.
+3. SWMM build for timing/storage (design storms per return period). Refs in `refs/`.
 
 ## Conventions
 - Self-contained `sim/index.html`; `<meta charset="utf-8">` FIRST line; `node sim/verify.mjs` green
@@ -36,5 +40,5 @@ _Updated 2026-07-19._
 - Vertical leaders = IPC orifice rating, NEVER Manning; the RELIEF is horizontal ⇒ pipe losses apply.
 - Provenance tags `class="tag t-known"` / `class="tag t-assume"` (no `measured`/`assumed` modifier).
 - Honesty: relief can't help an UPSTREAM-caused far-end flood; CAN help a BACKUP-caused one.
-- Git: origin `github.com/jmmas123/plumbing-sim`, main at `9f43961` (pushed). Branch before implementing;
+- Git: origin `github.com/jmmas123/plumbing-sim`, main at `3449d17` (pushed). Branch before implementing;
   merge/push + republish (Artifact `url=` the URL above, favicon 🌧️) at the end.
