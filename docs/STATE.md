@@ -12,8 +12,7 @@ _Updated 2026-07-20._
 - SHIPPED (`3449d17`, labels only, solver verified bit-identical): tabs ② and ③ now state that they
   answer different questions — ③ = momentum ROUTING split at the tee (~14% at 65 L/s, h=0.30),
   ② = SURPLUS the fall can't swallow (0 under a clear outlet). ② excludes ③'s diversion because `h`
-  is assumed (moves the fraction ~40%→0); proved over 1,920 configs that `qOver ≤ qStraight` always,
-  so ② can only understate the relief. User: "do the labels, dont change the physics".
+  is assumed; proved over 1,920 configs `qOver ≤ qStraight`, so ② can only understate the relief.
 
 ## System, as measured on site  (full list in CLAUDE.md — not repeated here)
 - Buffer crown→canaleta floor: 0.93 m far end, ~1.65 m outlet. Hangers 0.87 m → sag negligible.
@@ -26,8 +25,8 @@ _Updated 2026-07-20._
 - Worst 24 h = 82.5 mm ≈ 2-yr day; no sub-daily gauge within 17 km.
 
 ## Open leads
-1. MEASURE branch head `h` — the drop from the Y-T down to where the relief daylights. Only assumed
-   input left in the relief model; collapses the ~40%→0 spread in tab ③'s split.
+1. MEASURE branch head `h` (drop from Y-T to where the relief daylights) — the last assumed input in
+   the relief model; collapses the ~40%→0 spread in tab ③'s split.
 2. INSPECT pipe interiors for silt/blockage — cheapest "worked for years then failed" explanation.
 3. SWMM build for timing/storage (design storms per return period). Refs in `refs/`.
 
