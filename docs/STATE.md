@@ -15,13 +15,10 @@ _Updated 2026-07-20._
   is assumed (moves the fraction ~40%→0); proved over 1,920 configs that `qOver ≤ qStraight` always,
   so ② can only understate the relief. User: "do the labels, dont change the physics".
 
-## System, as measured on site
-- Roof 8,343 m² (123.6 × 67.5 m, 3 gables), plan area (pitch does NOT change Q).
-- Each 8″ collector serves ONE roof slope ≈ 1,390 m²; 6 collectors. Valley: double canaleta
-  (50×17) → 2 pipes, 9 boca tubos each. Collector 8″ PVC, ~0.9% grade, 63 m.
-- Boca tubos 9/collector, 6″, 45° wye. Canaleta single 40×14 / double 50×17 (level).
+## System, as measured on site  (full list in CLAUDE.md — not repeated here)
 - Buffer crown→canaleta floor: 0.93 m far end, ~1.65 m outlet. Hangers 0.87 m → sag negligible.
-- Outlet open/free, no tailwater. Y-T relief daylights on rear platform.
+- Outlet confirmed open/free by the user (2026-07-20), no tailwater. Y-T relief daylights on rear
+  platform; its drop below the tee (= branch head `h`) is still unmeasured.
 
 ## Key results
 - Pipe cap ~38–40 L/s (8″@0.9%). Surcharges >~104 mm/h; FLOODS >~307 mm/h (as-measured) ≈ 2.6×
